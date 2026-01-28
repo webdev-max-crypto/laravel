@@ -44,4 +44,11 @@ class WarehouseController extends Controller
 
         return back()->with('success','Warehouse rejected.');
     }
+    public function index()
+    {
+        $warehouses = Warehouse::all();
+        $activeWarehouses = Warehouse::where('status', 'active')->get();
+        return view('admin.warehouses.index', compact('warehouses', 'activeWarehouses'));
+    }
+
 }

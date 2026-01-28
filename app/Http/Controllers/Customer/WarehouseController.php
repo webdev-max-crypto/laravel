@@ -7,17 +7,20 @@ use App\Models\Warehouse;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
+use App\Mail\BookingPaidMail;
+use App\Models\Notification;
+use App\Models\User;
 
 class WarehouseController extends Controller
 {
-    // 🟢 Book page
+    // Book page
     public function book($id)
     {
         $warehouse = Warehouse::findOrFail($id);
         return view('customer.warehouses.book', compact('warehouse'));
     }
 
-    // 🟢 Calculate total price
+    // Calculate total
     public function calculate(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
@@ -37,32 +40,72 @@ class WarehouseController extends Controller
         ]);
     }
 
-    // 🟢 Confirm booking
-    public function confirm(Request $request, $id)
+    // Agreement Page
+    public function agreement(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
 
+        return view('customer.warehouses.agreement', [
+            'warehouse' => $warehouse,
+            'data' => $request->all()
+        ]);
+    }
+
+    // Final Confirm Booking → Auto Confirm + Notifications
+    public function finalConfirm(Request $request, $id)
+    {
+        $warehouse = Warehouse::findOrFail($id);
+        $customer = auth()->user();
+
         $booking = Booking::create([
             'warehouse_id' => $warehouse->id,
-            'customer_id' => auth()->id(),
+            'customer_id' => $customer->id,
             'area' => $request->area,
             'items' => $request->items,
+            'items_detail' => $request->items_detail,
             'months' => $request->months,
             'total_price' => $request->total_price,
-            'status' => 'pending',
+            'status' => 'confirmed',
         ]);
 
-        // 📧 Email Notification
+        // -------------------
+        // Notifications
+        // -------------------
+        // Admin
+        Notification::create([
+            'user_id' => User::where('role','admin')->first()->id,
+            'type' => 'booking',
+            'message' => "New booking from {$customer->name} for {$warehouse->name}",
+        ]);
+
+        // Owner
+        Notification::create([
+            'user_id' => $warehouse->owner_id,
+            'type' => 'booking',
+            'message' => "New booking for your warehouse {$warehouse->name} by {$customer->name}",
+        ]);
+
+        // Email to Customer
         Mail::raw(
             "Your warehouse booking is successful.\nTotal Price: {$booking->total_price}",
-            function ($message) {
-                $message->to(auth()->user()->email)
+            function ($message) use ($customer) {
+                $message->to($customer->email)
                         ->subject('Warehouse Booking Confirmation');
             }
         );
 
-        return redirect()
-            ->route('customer.dashboard')
-            ->with('success','Warehouse booked successfully.');
+        return redirect()->route('customer.payment', $booking->id)
+                         ->with('success','Warehouse booked successfully.');
+    }
+
+    // Optional: Customer Booking Index
+    public function index()
+    {
+        $bookings = Booking::where('customer_id',auth()->id())
+            ->with('warehouse')
+            ->latest()
+            ->get();
+
+        return view('customer.bookings.index', compact('bookings'));
     }
 }

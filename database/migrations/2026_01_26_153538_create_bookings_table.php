@@ -11,27 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-         Schema::create('bookings', function (Blueprint $table) {
-            $table->id();
-
-            $table->foreignId('warehouse_id')
-                  ->constrained()
-                  ->cascadeOnDelete();
-
-            $table->foreignId('customer_id')
-                  ->constrained('users')
-                  ->cascadeOnDelete();
-
-            $table->integer('area');
-            $table->integer('items');
-            $table->integer('months');
-            $table->decimal('total_price',10,2);
-
-            $table->enum('status',['pending','approved','rejected'])
-                  ->default('pending');
-
-            $table->timestamps();
-        });
+        //
     }
 
     /**
