@@ -54,10 +54,7 @@
                        style="width:100%;padding:10px;border-radius:6px;border:1px solid #ccc;transition:0.3s;">
             </div>
 
-            <button type="submit" 
-                    style="padding:12px 20px;background:#16a34a;color:white;border:none;border-radius:6px;font-weight:600;cursor:pointer;transition:0.3s;">
-                Book Warehouse
-            </button>
+            <a href="{{ route('customer.warehouses.book', $warehouse->id) }}" class="btn btn-primary">Book Warehouse</a>
         </form>
 
     </div>

@@ -1,32 +1,70 @@
 @extends('admin.layouts.app')
 
 @section('content')
-<h2>Pending Warehouses</h2>
 
-<table class="table">
-<thead><tr><th>Owner</th><th>Name</th><th>Location</th><th>Image</th><th>Actions</th></tr></thead>
-<tbody>
-@foreach($warehouses as $w)
-<tr>
-    <td>{{ $w->owner->name }} ({{ $w->owner->email }})</td>
-    <td>{{ $w->name }}</td>
-    <td>{{ Str::limit($w->location,50) }}</td>
-    <td>@if($w->image)<img src="{{ asset($w->image) }}" width="80">@endif</td>
-    <td>
-        <a href="{{ route('admin.warehouses.show',$w->id) }}" class="btn btn-sm btn-info">View</a>
+<h2 class="mb-4">Pending Warehouses</h2>
 
-        <form action="{{ route('admin.warehouses.approve',$w->id) }}" method="POST" class="d-inline">
-            @csrf
-            <button class="btn btn-sm btn-success">Approve</button>
-        </form>
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
 
-        <form action="{{ route('admin.warehouses.reject',$w->id) }}" method="POST" class="d-inline">
-            @csrf
-            <button class="btn btn-sm btn-danger">Reject</button>
-        </form>
-    </td>
-</tr>
-@endforeach
-</tbody>
+<table class="table table-bordered table-striped">
+    <thead class="table-dark">
+        <tr>
+            <th>Owner</th>
+            <th>Warehouse</th>
+            <th>Location</th>
+            <th>Price / Month</th>
+            <th>Image</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+
+    <tbody>
+    @forelse($warehouses as $w)
+        <tr>
+            <td>
+                {{ $w->owner->name }} <br>
+                <small>{{ $w->owner->email }}</small>
+            </td>
+
+            <td>{{ $w->name }}</td>
+
+            <td>{{ \Illuminate\Support\Str::limit($w->location, 40) }}</td>
+
+            <td>{{ $w->price_per_month }}</td>
+
+            <td>
+                @if($w->image)
+                    <a href="{{ asset('storage/'.$w->image) }}" target="_blank">
+                        <img src="{{ asset('storage/'.$w->image) }}" width="80" class="rounded">
+                    </a>
+                @endif
+            </td>
+
+            <td>
+                <a href="{{ route('admin.warehouses.show', $w->id) }}"
+                   class="btn btn-sm btn-info">View</a>
+
+                <form action="{{ route('admin.warehouses.approve', $w->id) }}"
+                      method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-success">Approve</button>
+                </form>
+
+                <form action="{{ route('admin.warehouses.reject', $w->id) }}"
+                      method="POST" class="d-inline">
+                    @csrf
+                    <button class="btn btn-sm btn-danger">Reject</button>
+                </form>
+            </td>
+        </tr>
+    @empty
+        <tr>
+            <td colspan="6" class="text-center">No pending warehouses</td>
+        </tr>
+    @endforelse
+    </tbody>
 </table>
+
 @endsection

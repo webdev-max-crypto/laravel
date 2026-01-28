@@ -4,72 +4,91 @@
 
 <div class="container mt-4">
 
-    <h2 class="mb-4">Warehouse Details</h2>
+<h2 class="mb-4">Warehouse Full Details</h2>
 
-    <div class="card p-4 shadow">
+@if(session('success'))
+    <div class="alert alert-success">{{ session('success') }}</div>
+@endif
 
-        {{-- Warehouse Image --}}
-        @if($warehouse->image)
-            <img src="{{ asset($warehouse->image) }}" class="img-fluid mb-4 rounded" style="max-height: 250px;">
-        @endif
+<div class="card shadow p-4">
 
-        <h4>{{ $warehouse->name }}</h4>
+    {{-- Warehouse Image --}}
+    @if($warehouse->image)
+        <a href="{{ asset('storage/'.$warehouse->image) }}" target="_blank">
+            <img src="{{ asset('storage/'.$warehouse->image) }}"
+                 class="img-fluid rounded mb-4"
+                 style="max-height: 300px;">
+        </a>
+    @endif
 
-        <p>
-            <strong>Owner:</strong>
-            {{ $warehouse->owner->name }}  
-            ({{ $warehouse->owner->email }})
-        </p>
+    <h4>{{ $warehouse->name }}</h4>
 
-        <p><strong>Location:</strong> {{ $warehouse->location }}</p>
-        <p><strong>Description:</strong> {{ $warehouse->description }}</p>
-        <p><strong>Contact:</strong> {{ $warehouse->contact }}</p>
+    <p><strong>Status:</strong>
+        <span class="badge bg-warning">{{ ucfirst($warehouse->status) }}</span>
+    </p>
 
-        <hr>
+    <hr>
 
-        {{-- CNIC FRONT --}}
-        @if($warehouse->owner->cnic_front)
-            <p><strong>CNIC Front:</strong></p>
-            <img src="{{ asset('storage/' . $warehouse->owner->cnic_front) }}"
-                 width="200" class="rounded mb-3">
-        @endif
+    <p><strong>Owner:</strong> {{ $warehouse->owner->name }}</p>
+    <p><strong>Email:</strong> {{ $warehouse->owner->email }}</p>
+    <p><strong>Contact:</strong> {{ $warehouse->contact }}</p>
 
-        {{-- CNIC BACK --}}
-        @if($warehouse->owner->cnic_back)
-            <p><strong>CNIC Back:</strong></p>
-            <img src="{{ asset('storage/' . $warehouse->owner->cnic_back) }}"
-                 width="200" class="rounded mb-3">
-        @endif
+    <hr>
 
-        {{-- PROPERTY DOC --}}
-        @if($warehouse->owner->property_document)
-            <p><strong>Property Document:</strong></p>
-            <a href="{{ asset('storage/' . $warehouse->owner->property_document) }}"
-               target="_blank"
-               class="btn btn-outline-primary btn-sm mb-3">View Document</a>
-        @endif
+    <p><strong>Location:</strong> {{ $warehouse->location }}</p>
+    <p><strong>Address:</strong> {{ $warehouse->address }}</p>
+    <p><strong>Description:</strong> {{ $warehouse->description }}</p>
+    <p><strong>Size:</strong> {{ $warehouse->size }}</p>
 
-        <hr>
+    <hr>
 
-        {{-- Approve / Reject --}}
-        <div class="mt-3">
+    <p><strong>Total Space:</strong> {{ $warehouse->total_space }}</p>
+    <p><strong>Available Space:</strong> {{ $warehouse->available_space }}</p>
+    <p><strong>Price / Month:</strong> {{ $warehouse->price_per_month }}</p>
 
-            <form action="{{ route('admin.warehouses.approve', $warehouse->id) }}"
-                  method="POST" class="d-inline">
-                @csrf
-                <button class="btn btn-success">Approve</button>
-            </form>
+    <hr>
 
-            <form action="{{ route('admin.warehouses.reject', $warehouse->id) }}"
-                  method="POST" class="d-inline">
-                @csrf
-                <button class="btn btn-danger">Reject</button>
-            </form>
+    {{-- Warehouse Property Document --}}
+    @if($warehouse->property_doc)
+        <p><strong>Warehouse Property Document:</strong></p>
+        <a href="{{ asset('storage/'.$warehouse->property_doc) }}"
+           target="_blank"
+           class="btn btn-outline-primary btn-sm">
+           View Document
+        </a>
+    @endif
 
-        </div>
+    <hr>
 
-    </div>
+    {{-- Owner CNIC --}}
+    @if($warehouse->owner->cnic_front)
+        <p><strong>Owner CNIC Front:</strong></p>
+        <img src="{{ asset('storage/'.$warehouse->owner->cnic_front) }}"
+             width="200" class="rounded mb-3">
+    @endif
 
+    @if($warehouse->owner->cnic_back)
+        <p><strong>Owner CNIC Back:</strong></p>
+        <img src="{{ asset('storage/'.$warehouse->owner->cnic_back) }}"
+             width="200" class="rounded mb-3">
+    @endif
+
+    <hr>
+
+    {{-- Approve / Reject --}}
+    <form action="{{ route('admin.warehouses.approve', $warehouse->id) }}"
+          method="POST" class="d-inline">
+        @csrf
+        <button class="btn btn-success">Approve</button>
+    </form>
+
+    <form action="{{ route('admin.warehouses.reject', $warehouse->id) }}"
+          method="POST" class="d-inline">
+        @csrf
+        <button class="btn btn-danger">Reject</button>
+    </form>
+
+</div>
 </div>
 
 @endsection

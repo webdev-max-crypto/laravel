@@ -25,6 +25,7 @@ use App\Http\Controllers\PaymentController; // <- Main PaymentController for own
 use App\Http\Controllers\CustomerDashboardController;
 use App\Http\Controllers\BookingController as CustomerBookingController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\Customer\WarehouseController;
 
 
 
@@ -115,6 +116,18 @@ Route::middleware(['auth','role:customer'])->group(function () {
 
     Route::post('/customer/booking/{warehouse}', [CustomerBookingController::class, 'store'])
         ->name('customer.booking.store');
+
+     Route::get('/warehouse/{id}/book',
+        [Customer\WarehouseController::class,'book']
+    )->name('customer.warehouses.book');
+
+    Route::post('/warehouse/{id}/calculate',
+        [Customer\WarehouseController::class,'calculate']
+    )->name('customer.warehouses.calculate');
+
+    Route::post('/warehouse/{id}/confirm',
+        [Customer\WarehouseController::class,'confirm']
+    )->name('customer.warehouses.confirm');
 
     // Report Routes
     Route::get('/customer/warehouse/{id}/report', [ReportController::class, 'create'])
