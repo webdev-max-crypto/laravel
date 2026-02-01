@@ -63,25 +63,23 @@
             </h3>
         </div>
 
-        <!-- CONFIRM FORM -->
-        <form action="{{ route('customer.warehouses.confirm', $warehouse->id) }}" method="POST">
-            @csrf
+        <!-- ✅ CONFIRM FORM -->
+      <form action="{{ route('customer.warehouses.agreement', $warehouse->id) }}" method="POST">
+    @csrf
+    <input type="hidden" name="area" value="{{ $data['area'] }}">
+    <input type="hidden" name="items" value="{{ $data['items'] }}">
+    <input type="hidden" name="months" value="{{ $data['months'] }}">
+    <input type="hidden" name="items_detail" value="{{ $data['items_detail'] ?? '' }}">
+    <input type="hidden" name="total_price" value="{{ $total }}">
 
-            <input type="hidden" name="area" value="{{ $data['area'] }}">
-            <input type="hidden" name="items" value="{{ $data['items'] }}">
-            <input type="hidden" name="months" value="{{ $data['months'] }}">
-            <input type="hidden" name="items_detail" value="{{ $data['items_detail'] ?? '' }}">
-            <input type="hidden" name="total_price" value="{{ $total }}">
+    <button type="submit"
+            style="width:100%;padding:14px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;">
+        Agree & Continue
+    </button>
+</form>
 
-            <button type="submit"
-                    style="width:100%;padding:14px;
-                    background:#16a34a;color:white;
-                    border:none;border-radius:10px;
-                    font-size:17px;font-weight:600;
-                    cursor:pointer;">
-                Confirm Booking
-            </button>
-        </form>
+</form>
+
 
     </div>
 </div>

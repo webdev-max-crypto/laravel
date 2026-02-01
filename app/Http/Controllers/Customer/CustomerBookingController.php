@@ -67,4 +67,15 @@ class CustomerBookingController extends Controller
 
         return view('customer.bookings.index', compact('bookings'));
     }
+    public function store(Request $request, $warehouse_id)
+{
+    $booking = new Booking();
+    $booking->user_id = auth()->id();
+    $booking->warehouse_id = $warehouse_id;
+    $booking->status = 'Confirmed'; // ya 'Pending', agar admin approval chahiye
+    $booking->save();
+
+    return redirect()->route('customer.history')->with('success', 'Booking successful!');
+}
+
 }

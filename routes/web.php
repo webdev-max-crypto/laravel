@@ -23,6 +23,8 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\AdminController;
+
 
 // -------------------------------
 // OWNER CONTROLLERS
@@ -40,6 +42,7 @@ use App\Http\Controllers\BookingController as CustomerBookingController;
 use App\Http\Controllers\Customer\WarehouseController as CustomerWarehouseController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
 use App\Http\Controllers\Customer\ReportController as CustomerReportController; // Fixed alias
+use App\Http\Controllers\Customer\CustomerHistoryController; // Added for history
 
 // -------------------------------
 // GENERAL ROUTES
@@ -184,38 +187,73 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
 // -------------------------------
 // CUSTOMER ROUTES
 // -------------------------------
-Route::middleware(['auth','role:customer'])->prefix('customer')->name('customer.')->group(function () {
+Route::middleware(['auth', 'role:customer'])
+    ->prefix('customer')
+    ->name('customer.')
+    ->group(function () {
 
-    Route::get('/dashboard', [CustomerDashboardController::class, 'index'])->name('dashboard');
+    // ---------------------------
+    // Dashboard
+    // ---------------------------
+    Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
+        ->name('dashboard');
 
+    // ---------------------------
     // Profile
+    // ---------------------------
     Route::get('/edit', [CustomerDashboardController::class, 'edit'])->name('edit');
     Route::put('/update', [CustomerDashboardController::class, 'update'])->name('update');
     Route::delete('/delete', [CustomerDashboardController::class, 'destroy'])->name('delete');
 
-    // Bookings
+    // ---------------------------
+    // Warehouse Booking
+    // ---------------------------
     Route::get('/booking/{warehouse}', [CustomerBookingController::class, 'create'])->name('booking.create');
     Route::post('/booking/{warehouse}', [CustomerBookingController::class, 'store'])->name('booking.store');
 
-    // New warehouse booking flow
-    Route::get('/warehouse/{id}/book', [CustomerWarehouseController::class, 'book'])->name('warehouses.book');
-    Route::post('/warehouse/{id}/calculate', [CustomerWarehouseController::class, 'calculate'])->name('warehouses.calculate');
-    Route::post('/warehouse/{id}/confirm', [CustomerWarehouseController::class, 'confirm'])->name('warehouses.confirm');
-    Route::post('/warehouse/{id}/agreement', [CustomerWarehouseController::class,'agreement'])->name('warehouses.agreement');
-    Route::post('/warehouse/{id}/final-confirm', [CustomerWarehouseController::class,'finalConfirm'])->name('warehouses.finalConfirm');
+    // Booking flow for warehouse
+   // Booking flow for warehouse
+// Booking flow for warehouse
 
+    Route::get('{id}/book', [CustomerWarehouseController::class, 'book'])->name('warehouses.book');
+    Route::post('{id}/calculate', [CustomerWarehouseController::class, 'calculate'])->name('warehouses.calculate');
+    Route::post('{id}/agreement', [CustomerWarehouseController::class,'agreement'])->name('warehouses.agreement');
+    Route::post('{id}/final-confirm', [CustomerWarehouseController::class,'finalConfirm'])->name('warehouses.finalConfirm');
+
+
+
+    // ---------------------------
     // Payment
-    Route::get('/payment/{booking}', [CustomerBookingController::class,'payment'])->name('payment');
-    Route::post('/payment/{booking}', [CustomerBookingController::class,'paymentStore'])->name('payment.store');
+    // ---------------------------
+    Route::get('/payment/{booking}', [CustomerWarehouseController::class,'payment'])->name('payment');
+    Route::post('/payment/{booking}', [CustomerWarehouseController::class,'paymentStore'])->name('payment.store');
 
-    // Booking history
+    // ---------------------------
+    // Booking History (for dashboard table)
+    // ---------------------------
     Route::get('/bookings', [CustomerBookingController::class,'index'])->name('bookings');
 
+    // ---------------------------
+    // Customer History Page (full history)
+    // ---------------------------
+    Route::get('/history', [CustomerHistoryController::class, 'index'])->name('history');
+
+    // ---------------------------
+    // Support Page
+    // ---------------------------
+    Route::get('/support', function () {
+        return view('customer.support.index');
+    })->name('support');
+
+    // ---------------------------
     // Notifications
+    // ---------------------------
     Route::get('/notifications', [CustomerNotificationController::class,'index'])->name('notifications.index');
     Route::get('/notifications/read/{id}', [CustomerNotificationController::class,'markAsRead'])->name('notifications.read');
 
-    // Reports (fixed alias)
+    // ---------------------------
+    // Reports
+    // ---------------------------
     Route::get('/warehouse/{id}/report', [CustomerReportController::class, 'create'])->name('report.create');
     Route::post('/warehouse/{id}/report', [CustomerReportController::class, 'store'])->name('report.store');
 });

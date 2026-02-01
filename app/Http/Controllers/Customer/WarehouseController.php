@@ -7,20 +7,19 @@ use App\Models\Warehouse;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\BookingPaidMail;
 use App\Models\Notification;
 use App\Models\User;
 
 class WarehouseController extends Controller
 {
-    // Book page
+    // Step 1: Book Page
     public function book($id)
     {
         $warehouse = Warehouse::findOrFail($id);
         return view('customer.warehouses.book', compact('warehouse'));
     }
 
-    // Calculate total
+    // Step 2: Calculate Total & Show Summary
     public function calculate(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
@@ -29,6 +28,7 @@ class WarehouseController extends Controller
             'area' => 'required|integer|min:1',
             'items' => 'required|integer|min:1',
             'months' => 'required|integer|min:1',
+            'items_detail' => 'nullable|string',
         ]);
 
         $total = $warehouse->price_per_month * $data['months'];
@@ -40,72 +40,88 @@ class WarehouseController extends Controller
         ]);
     }
 
-    // Agreement Page
+    // Step 3: Agreement Page
     public function agreement(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
 
+        // Pass all previous data to agreement
         return view('customer.warehouses.agreement', [
             'warehouse' => $warehouse,
             'data' => $request->all()
         ]);
     }
 
-    // Final Confirm Booking → Auto Confirm + Notifications
+    // Step 4: Final Confirm Booking
     public function finalConfirm(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
         $customer = auth()->user();
 
+        $data = $request->validate([
+            'area' => 'required|integer|min:1',
+            'items' => 'required|integer|min:1',
+            'months' => 'required|integer|min:1',
+            'items_detail' => 'nullable|string',
+            'total_price' => 'required|numeric',
+        ]);
+
+        // Create booking but status is "pending" until payment
         $booking = Booking::create([
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer->id,
-            'area' => $request->area,
-            'items' => $request->items,
-            'items_detail' => $request->items_detail,
-            'months' => $request->months,
-            'total_price' => $request->total_price,
-            'status' => 'confirmed',
+            'user_id' => $customer->id, // ✅ add this
+            'area' => $data['area'],
+            'items' => $data['items'],
+            'items_detail' => $data['items_detail'],
+            'months' => $data['months'],
+            'total_price' => $data['total_price'],
+            'status' => 'active', // not confirmed yet
         ]);
 
-        // -------------------
-        // Notifications
-        // -------------------
-        // Admin
+        return redirect()->route('customer.payment', $booking->id);
+    }
+
+    // Step 5: Payment Page
+    public function payment(Booking $booking)
+    {
+        return view('customer.warehouses.payment', compact('booking'));
+    }
+
+    // Step 6: Store Payment
+    public function paymentStore(Request $request, Booking $booking)
+    {
+        $data = $request->validate([
+            'payment_method' => 'required|in:cash,online',
+            'payment_slip' => 'nullable|file|mimes:jpg,png,pdf|max:2048',
+        ]);
+
+        if ($request->hasFile('payment_slip')) {
+            $data['payment_slip'] = $request->file('payment_slip')->store('payment_slips', 'public');
+        }
+
+        $booking->update([
+            'status' => $data['payment_method'] === 'online' ? 'paid' : 'cash_pending',
+            'payment_method' => $data['payment_method'],
+            'payment_slip' => $data['payment_slip'] ?? null,
+        ]);
+        return redirect()->route('customer.dashboard')
+                         ->with('success','Payment submitted successfully.');
+
+        // Notify admin and warehouse owner
         Notification::create([
             'user_id' => User::where('role','admin')->first()->id,
             'type' => 'booking',
-            'message' => "New booking from {$customer->name} for {$warehouse->name}",
+            'message' => "New booking payment for {$booking->warehouse->name} by {$booking->customer->name}",
         ]);
 
-        // Owner
         Notification::create([
-            'user_id' => $warehouse->owner_id,
+            'user_id' => $booking->warehouse->owner_id,
             'type' => 'booking',
-            'message' => "New booking for your warehouse {$warehouse->name} by {$customer->name}",
+            'message' => "Booking payment received for your warehouse {$booking->warehouse->name}",
         ]);
 
-        // Email to Customer
-        Mail::raw(
-            "Your warehouse booking is successful.\nTotal Price: {$booking->total_price}",
-            function ($message) use ($customer) {
-                $message->to($customer->email)
-                        ->subject('Warehouse Booking Confirmation');
-            }
-        );
-
-        return redirect()->route('customer.payment', $booking->id)
-                         ->with('success','Warehouse booked successfully.');
-    }
-
-    // Optional: Customer Booking Index
-    public function index()
-    {
-        $bookings = Booking::where('customer_id',auth()->id())
-            ->with('warehouse')
-            ->latest()
-            ->get();
-
-        return view('customer.bookings.index', compact('bookings'));
+        return redirect()->route('customer.dashboard')
+                         ->with('success','Payment submitted successfully.');
     }
 }

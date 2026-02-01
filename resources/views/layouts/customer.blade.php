@@ -2,10 +2,10 @@
 <html>
 <head>
     <title>Customer Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f3f4f6; }
+        body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f3f4f6; transition:margin-left 0.3s; }
 
+        /* HEADER */
         .header {
             background: #1f2937;
             padding: 20px;
@@ -14,28 +14,35 @@
             justify-content: space-between;
             align-items: center;
             position: sticky;
-            top:0;
-            z-index:1000;
+            top: 0;
+            z-index: 1000;
         }
-
         .header a { margin-left:10px; padding:8px 14px; border-radius:6px; text-decoration:none; color:white; }
         .edit { background:#3b82f6; }
         .logout { background:#dc2626; }
+        .menu-btn { font-size:24px; cursor:pointer; margin-right:10px; }
 
-        /* Notification Dropdown */
-        .notif-btn { position:relative; background:#f59e0b; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; }
+        /* NOTIFICATIONS */
+        .notif-btn { position: relative; background:#f59e0b; border:none; color:white; padding:8px 12px; border-radius:6px; cursor:pointer; }
         .notif-btn .badge { position:absolute; top:-5px; right:-5px; background:red; color:white; padding:2px 6px; border-radius:50%; font-size:12px; }
-        .notif-dropdown {
-            position:absolute; top:40px; right:0; width:300px; background:white; color:#111; border-radius:6px;
-            box-shadow:0 2px 6px rgba(0,0,0,0.2); display:none; z-index:1001;
-        }
+        .notif-dropdown { position:absolute; top:40px; right:0; width:300px; background:white; color:#111; border-radius:6px; box-shadow:0 2px 6px rgba(0,0,0,0.2); display:none; z-index:1001; }
         .notif-dropdown.active { display:block; }
         .notif-item { padding:10px 15px; border-bottom:1px solid #eee; }
         .notif-item.unread { font-weight:bold; }
         .notif-item small { display:block; color:#888; margin-top:4px; font-size:12px; }
         .notif-footer { text-align:center; padding:10px; background:#050506; }
 
-        .content { padding:30px; }
+        /* SIDEBAR */
+        .sidebar { position: fixed; top:0; left:-240px; width:240px; height:100vh; background:#111827; color:#fff; padding-top:60px; transition:left 0.3s; z-index:999; overflow-y:auto; }
+        .sidebar.open { left:0; }
+        .sidebar ul { list-style:none; padding:0; margin:0; }
+        .sidebar ul li { border-bottom:1px solid #1f2937; }
+        .sidebar ul li a { display:block; padding:14px 20px; color:#d1d5db; text-decoration:none; }
+        .sidebar ul li a.active, .sidebar ul li a:hover { background:#374151; color:#fff; }
+
+        /* CONTENT */
+        .content-wrapper { padding:30px; margin-left:0; transition:margin-left 0.3s; }
+        .content-wrapper.shifted { margin-left:240px; }
     </style>
 </head>
 <body>
@@ -45,13 +52,14 @@ $unreadNotifications = \App\Models\Notification::where('user_id', auth()->id())-
 $notifications = \App\Models\Notification::where('user_id', auth()->id())->latest()->take(5)->get();
 @endphp
 
+<!-- HEADER -->
 <div class="header">
-    <h2>Customer Panel</h2>
+    <div style="display:flex; align-items:center;">
+        <span class="menu-btn" id="menuBtn">☰</span>
+        <h2>Customer Panel</h2>
+    </div>
     <div style="display:flex; align-items:center; gap:10px; position:relative;">
-
-        <!-- Notifications -->
-        <button class="notif-btn" id="notifBtn">
-            🔔
+        <button class="notif-btn" id="notifBtn">🔔
             @if($unreadNotifications)
                 <span class="badge">{{ $unreadNotifications }}</span>
             @endif
@@ -71,27 +79,44 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())->lates
             <div class="notif-footer"><a href="{{ route('customer.notifications.index') }}">View All</a></div>
         </div>
 
-        <!-- Edit Profile -->
         <a href="{{ route('customer.edit') }}" class="edit">Edit Profile</a>
-
-        <!-- Logout -->
-        <a href="{{ route('logout') }}"
-           onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-           class="logout">Logout</a>
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
+        <a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();" class="logout">Logout</a>
+        <form id="logout-form-header" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
     </div>
 </div>
 
-<div class="content">
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <ul>
+        <li><a href="{{ route('customer.dashboard') }}" class="{{ request()->routeIs('customer.dashboard') ? 'active' : '' }}">🏠 Dashboard</a></li>
+        <li><a href="{{ route('customer.history') }}" class="{{ request()->routeIs('customer.history') ? 'active' : '' }}">📜 History</a></li>
+        <li><a href="{{ route('customer.support') }}" class="{{ request()->routeIs('customer.support') ? 'active' : '' }}">🆘 Support</a></li>
+        <li><a href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form-sidebar').submit();" class="logout">Logout</a>
+            <form id="logout-form-sidebar" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
+        </li>
+    </ul>
+</div>
+
+<!-- PAGE CONTENT -->
+<div class="content-wrapper" id="contentWrapper">
     @yield('content')
 </div>
 
 <script>
+    // Sidebar toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebar = document.getElementById('sidebar');
+    const contentWrapper = document.getElementById('contentWrapper');
+
+    menuBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        contentWrapper.classList.toggle('shifted');
+    });
+
+    // Notification dropdown
     const notifBtn = document.getElementById('notifBtn');
     const notifDropdown = document.getElementById('notifDropdown');
-
     notifBtn.addEventListener('click', () => { notifDropdown.classList.toggle('active'); });
-
     document.addEventListener('click', function(event) {
         if (!notifBtn.contains(event.target) && !notifDropdown.contains(event.target)) {
             notifDropdown.classList.remove('active');

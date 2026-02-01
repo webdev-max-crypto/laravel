@@ -32,7 +32,10 @@ class CustomerDashboardController extends Controller
         $user = Auth::user();
         $user->update($request->only('name','email'));
 
-        return redirect()->route('customer.edit')->with('success','Profile updated!');
+        
+    // Flash message
+        return redirect()->route('customer.dashboard')
+            ->with('success','Profile updated successfully');
     }
 
     // Delete Account
