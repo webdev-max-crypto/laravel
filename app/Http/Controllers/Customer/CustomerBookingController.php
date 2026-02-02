@@ -3,79 +3,71 @@
 namespace App\Http\Controllers\Customer;
 
 use App\Http\Controllers\Controller;
-use App\Models\Booking;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\BookingPaidMail;
-use App\Models\Notification;
+use App\Models\Booking;
+use App\Models\Warehouse;
 use App\Models\User;
+use App\Models\Notification;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class CustomerBookingController extends Controller
 {
-    // Customer Payment Page
-    public function payment(Booking $booking)
+    // Show booking page
+    public function create($warehouse_id)
     {
-        return view('customer.payment', compact('booking'));
+        $warehouse = Warehouse::findOrFail($warehouse_id);
+        return view('customer.warehouses.book', compact('warehouse'));
     }
 
-    // Store Payment Slip + Notifications
-    public function paymentStore(Request $request, Booking $booking)
+    // Store booking after confirmation
+    public function store(Request $request, $warehouse_id)
     {
-        $request->validate([
-            'payment_slip' => 'required|image|max:4096'
-        ]);
-
-        $path = $request->file('payment_slip')->store('payments','public');
-
-        $booking->update([
-            'payment_slip' => $path
-        ]);
-
+        $warehouse = Warehouse::findOrFail($warehouse_id);
         $customer = auth()->user();
 
-        // -------------------
-        // Notifications
-        // -------------------
-        // Admin
-        Notification::create([
-            'user_id' => User::where('role','admin')->first()->id,
-            'type' => 'payment',
-            'message' => "{$customer->name} submitted payment for {$booking->warehouse->name}",
+        $data = $request->validate([
+            'area' => 'required|integer|min:1',
+            'items' => 'required|integer|min:1',
+            'months' => 'required|integer|min:1',
+            'items_detail' => 'nullable|string',
+            'total_price' => 'required|numeric',
         ]);
 
-        // Owner
-        Notification::create([
-            'user_id' => $booking->warehouse->owner_id,
-            'type' => 'payment',
-            'message' => "Payment submitted for your warehouse {$booking->warehouse->name}",
+        // Create booking
+        $booking = Booking::create([
+            'warehouse_id' => $warehouse->id,
+            'customer_id' => $customer->id,
+            'user_id' => $customer->id,
+            'area' => $data['area'],
+            'items' => $data['items'],
+            'items_detail' => $data['items_detail'],
+            'months' => $data['months'],
+            'total_price' => $data['total_price'],
+            'status' => 'active',
         ]);
 
-        // Send Email
-        Mail::to($customer->email)->send(new BookingPaidMail($booking));
+        // Notify admin
+        Notification::create([
+            'user_id' => 1, // Admin
+            'message' => "New booking #{$booking->id} for warehouse {$warehouse->name} by {$customer->name}"
+        ]);
 
-        return redirect()->route('customer.dashboard')
-            ->with('success','Payment submitted successfully');
+        return redirect()->route('customer.payment', $booking->id)
+                         ->with('success', 'Booking created! Proceed to payment.');
     }
 
-    // Customer Booking History
-    public function index()
+    // Generate QR code (can be called after payment or final confirm)
+    public function generateQr($booking_id)
     {
-        $bookings = Booking::where('customer_id', auth()->id())
-            ->with('warehouse')
-            ->latest()
-            ->get();
+        $booking = Booking::findOrFail($booking_id);
 
-        return view('customer.bookings.index', compact('bookings'));
+        if (!$booking->qr_code) {
+            $booking->qr_code = QrCode::generate(route('customer.dashboard') . '?booking=' . $booking->id);
+            $booking->save();
+        }
+
+        return response()->json([
+            'qr_code' => $booking->qr_code
+        ]);
     }
-    public function store(Request $request, $warehouse_id)
-{
-    $booking = new Booking();
-    $booking->user_id = auth()->id();
-    $booking->warehouse_id = $warehouse_id;
-    $booking->status = 'Confirmed'; // ya 'Pending', agar admin approval chahiye
-    $booking->save();
-
-    return redirect()->route('customer.history')->with('success', 'Booking successful!');
-}
-
 }

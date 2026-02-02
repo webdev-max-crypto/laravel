@@ -3,38 +3,38 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Booking;
-use App\Models\Warehouse;
+use Illuminate\Support\Str;
 
 class BookingController extends Controller
 {
-    // Show booking form
-    public function create(Warehouse $warehouse)
+    // Generate QR after payment
+    public function generateQr($id)
     {
-        return view('customer.booking.create', compact('warehouse'));
+        $booking = Booking::findOrFail($id);
+
+        if ($booking->payment_status !== 'escrow' && $booking->payment_status !== 'paid') {
+            return back()->with('error', 'Payment not confirmed');
+        }
+
+        $booking->update([
+            'qr_code'        => Str::uuid(),
+            'qr_expires_at'  => $booking->end_date,
+            'expires_at'     => $booking->end_date
+        ]);
+
+        return back()->with('success', 'QR generated');
     }
 
-    // Store booking
-    public function store(Request $request, Warehouse $warehouse)
+    // Warehouse confirms goods stored
+    public function confirmGoods($id)
     {
-        $request->validate([
-            'start_date'=>'required|date',
-            'end_date'=>'required|date|after_or_equal:start_date'
+        $booking = Booking::findOrFail($id);
+
+        $booking->update([
+            'goods_confirmed' => 1
         ]);
 
-        $days = (strtotime($request->end_date) - strtotime($request->start_date))/(60*60*24) + 1;
-        $total_price = $days * $warehouse->price_per_unit;
-
-        Booking::create([
-            'warehouse_id'=>$warehouse->id,
-            'customer_id'=>Auth::id(),
-            'start_date'=>$request->start_date,
-            'end_date'=>$request->end_date,
-            'total_price'=>$total_price,
-            'status'=>'active'
-        ]);
-
-        return redirect()->route('customer.dashboard')->with('success','Warehouse booked!');
+        return back()->with('success', 'Goods storage confirmed');
     }
 }

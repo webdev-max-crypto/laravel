@@ -16,15 +16,14 @@ use App\Http\Controllers\Admin\CustomerController as AdminCustomerController;
 use App\Http\Controllers\Admin\WarehouseController as AdminWarehouseController;
 use App\Http\Controllers\Admin\ProductController as AdminProductController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
-use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 use App\Http\Controllers\Admin\PaymentController as AdminPaymentController;
 use App\Http\Controllers\Admin\FraudController;
 use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Admin\EscrowController as AdminEscrowController;
 use App\Http\Controllers\AdminController;
-
 
 // -------------------------------
 // OWNER CONTROLLERS
@@ -38,11 +37,11 @@ use App\Http\Controllers\PaymentController; // Owner payments
 // CUSTOMER CONTROLLERS
 // -------------------------------
 use App\Http\Controllers\CustomerDashboardController;
-use App\Http\Controllers\BookingController as CustomerBookingController;
+use App\Http\Controllers\Customer\CustomerBookingController; // ✅ Correct controller for booking
 use App\Http\Controllers\Customer\WarehouseController as CustomerWarehouseController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
-use App\Http\Controllers\Customer\ReportController as CustomerReportController; // Fixed alias
-use App\Http\Controllers\Customer\CustomerHistoryController; // Added for history
+use App\Http\Controllers\Customer\ReportController as CustomerReportController;
+use App\Http\Controllers\Customer\CustomerHistoryController;
 
 // -------------------------------
 // GENERAL ROUTES
@@ -60,7 +59,6 @@ Route::middleware('guest')->group(function () {
 // Dashboard redirect after login
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $user = auth()->user();
-
     return match($user->role) {
         'admin' => redirect()->route('admin.dashboard'),
         'owner' => !$user->agreement_accepted
@@ -87,7 +85,7 @@ Route::middleware('auth')->group(function () {
 // -------------------------------
 Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group(function () {
 
-    // Dashboard & Profile
+    // Dashboard & Agreement
     Route::get('/dashboard', [DashboardController::class, 'owner'])->name('dashboard');
     Route::get('/agreement', [DashboardController::class, 'agreement'])->name('agreement');
     Route::post('/agreement/accept', [DashboardController::class, 'acceptAgreement'])->name('agreement.accept');
@@ -122,27 +120,16 @@ Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group
     // Payments
     Route::get('/payments', [PaymentController::class, 'ownerIndex'])->name('payments');
 
-    // -------------------------------
     // Help & Support
-    // -------------------------------
-    Route::get('/help', function () {
-        return view('owner.help.index'); // Blade file path
-    })->name('help');
-
-    Route::post('/help', function (\Illuminate\Http\Request $request) {
-        // Optional: save message or send email
-        return redirect()->back()->with('success', 'Your message has been sent!');
-    });
+    Route::get('/help', fn() => view('owner.help.index'))->name('help');
+    Route::post('/help', fn(\Illuminate\Http\Request $request) => redirect()->back()->with('success', 'Your message has been sent!'));
 });
-
-
 
 // -------------------------------
 // ADMIN ROUTES
 // -------------------------------
 Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group(function () {
 
-    // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Notifications
@@ -170,9 +157,11 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
     // Orders
     Route::get('/orders', [AdminOrderController::class,'index'])->name('orders.index');
 
-    // Payments
+    // Payments & Escrow
     Route::get('/payments/escrow', [AdminPaymentController::class,'escrow'])->name('payments.escrow');
     Route::post('/payments/{id}/release', [AdminPaymentController::class,'release'])->name('payments.release');
+    Route::get('/escrow', [AdminEscrowController::class,'index']);
+    Route::post('/escrow/{id}/release', [AdminEscrowController::class,'release']);
 
     // Fraud & Reviews
     Route::get('/fraud', [FraudController::class,'index'])->name('fraud.index');
@@ -189,73 +178,47 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
 // -------------------------------
 Route::middleware(['auth', 'role:customer'])
     ->prefix('customer')
-    ->name('customer.')
-    ->group(function () {
+    ->name('customer.')->group(function () {
 
-    // ---------------------------
     // Dashboard
-    // ---------------------------
-    Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
-        ->name('dashboard');
+    Route::get('/dashboard', [CustomerDashboardController::class,'index'])->name('dashboard');
 
-    // ---------------------------
     // Profile
-    // ---------------------------
-    Route::get('/edit', [CustomerDashboardController::class, 'edit'])->name('edit');
-    Route::put('/update', [CustomerDashboardController::class, 'update'])->name('update');
-    Route::delete('/delete', [CustomerDashboardController::class, 'destroy'])->name('delete');
+    Route::get('/edit', [CustomerDashboardController::class,'edit'])->name('edit');
+    Route::put('/update', [CustomerDashboardController::class,'update'])->name('update');
+    Route::delete('/delete', [CustomerDashboardController::class,'destroy'])->name('delete');
 
-    // ---------------------------
-    // Warehouse Booking
-    // ---------------------------
-    Route::get('/booking/{warehouse}', [CustomerBookingController::class, 'create'])->name('booking.create');
-    Route::post('/booking/{warehouse}', [CustomerBookingController::class, 'store'])->name('booking.store');
+    // Warehouse booking flow
+    Route::get('/booking/{warehouse}', [CustomerBookingController::class,'create'])->name('booking.create');
+    Route::post('/booking/{warehouse}', [CustomerBookingController::class,'store'])->name('booking.store');
 
-    // Booking flow for warehouse
-   // Booking flow for warehouse
-// Booking flow for warehouse
-
-    Route::get('{id}/book', [CustomerWarehouseController::class, 'book'])->name('warehouses.book');
-    Route::post('{id}/calculate', [CustomerWarehouseController::class, 'calculate'])->name('warehouses.calculate');
+    Route::get('{id}/book', [CustomerWarehouseController::class,'book'])->name('warehouses.book');
+    Route::post('{id}/calculate', [CustomerWarehouseController::class,'calculate'])->name('warehouses.calculate');
     Route::post('{id}/agreement', [CustomerWarehouseController::class,'agreement'])->name('warehouses.agreement');
     Route::post('{id}/final-confirm', [CustomerWarehouseController::class,'finalConfirm'])->name('warehouses.finalConfirm');
 
-
-
-    // ---------------------------
-    // Payment
-    // ---------------------------
+    // Payment routes
     Route::get('/payment/{booking}', [CustomerWarehouseController::class,'payment'])->name('payment');
     Route::post('/payment/{booking}', [CustomerWarehouseController::class,'paymentStore'])->name('payment.store');
 
-    // ---------------------------
-    // Booking History (for dashboard table)
-    // ---------------------------
+    // Booking History
     Route::get('/bookings', [CustomerBookingController::class,'index'])->name('bookings');
+    Route::post('/booking/{id}/qr', [CustomerBookingController::class,'generateQr'])->middleware('auth');
+    Route::post('/booking/{id}/confirm-goods', [CustomerBookingController::class,'confirmGoods']);
 
-    // ---------------------------
-    // Customer History Page (full history)
-    // ---------------------------
-    Route::get('/history', [CustomerHistoryController::class, 'index'])->name('history');
+    // Customer full history
+    Route::get('/history', [CustomerHistoryController::class,'index'])->name('history');
 
-    // ---------------------------
-    // Support Page
-    // ---------------------------
-    Route::get('/support', function () {
-        return view('customer.support.index');
-    })->name('support');
+    // Support
+    Route::get('/support', fn() => view('customer.support.index'))->name('support');
 
-    // ---------------------------
     // Notifications
-    // ---------------------------
     Route::get('/notifications', [CustomerNotificationController::class,'index'])->name('notifications.index');
     Route::get('/notifications/read/{id}', [CustomerNotificationController::class,'markAsRead'])->name('notifications.read');
 
-    // ---------------------------
     // Reports
-    // ---------------------------
-    Route::get('/warehouse/{id}/report', [CustomerReportController::class, 'create'])->name('report.create');
-    Route::post('/warehouse/{id}/report', [CustomerReportController::class, 'store'])->name('report.store');
+    Route::get('/warehouse/{id}/report', [CustomerReportController::class,'create'])->name('report.create');
+    Route::post('/warehouse/{id}/report', [CustomerReportController::class,'store'])->name('report.store');
 });
 
 // -------------------------------

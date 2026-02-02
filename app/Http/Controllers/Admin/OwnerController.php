@@ -15,4 +15,10 @@ class OwnerController extends Controller
 
         return view('admin.owners.index', compact('owners'));
     }
+       public function updateLastActive($ownerId)
+    {
+    $warehouses = \App\Models\Warehouse::where('owner_id', $ownerId)->get();
+    foreach($warehouses as $w){
+        $w->update(['last_active' => now()]);
+    }}
 }

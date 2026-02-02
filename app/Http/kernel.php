@@ -50,6 +50,8 @@ class Kernel extends HttpKernel
         'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        'check.qr' => \App\Http\Middleware\CheckQrAccess::class,
+        'qr.access' => \App\Http\Middleware\VerifyQrAccess::class,
 
         // ✅ Your role middleware must be added here
         'role' => \App\Http\Middleware\RoleMiddleware::class,

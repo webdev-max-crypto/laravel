@@ -4,41 +4,71 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Payment;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Booking;
+use Illuminate\Support\Facades\DB;
 
 class PaymentController extends Controller
 {
-    /**
-     * Display all payments related to the owner’s warehouses.
-     */
-    public function ownerIndex()
+    // Customer payment → ESCROW
+    public function store(Request $request)
     {
-        $ownerId = Auth::id();
+        DB::transaction(function () use ($request) {
 
-        // Fetch payments where booking belongs to warehouses of this owner
-        $payments = Payment::whereHas('booking.warehouse', function ($query) use ($ownerId) {
-            $query->where('owner_id', $ownerId);
-        })
-        ->with(['booking.warehouse', 'booking.customer'])
-        ->orderBy('created_at', 'desc')
-        ->paginate(20); // 20 payments per page
+            $booking = Booking::findOrFail($request->booking_id);
 
-        return view('owner.payments.index', compact('payments'));
+            Payment::create([
+                'booking_id'  => $booking->id,
+                'customer_id' => auth()->id(),
+                'owner_id'    => $booking->warehouse->owner_id,
+                'amount'      => $booking->total_price,
+                'status'      => 'escrow',
+                'txn_ref'     => $request->txn_ref,
+            ]);
+
+            $booking->update([
+                'payment_status' => 'escrow'
+            ]);
+        });
+
+        return back()->with('success', 'Payment received & held in escrow');
     }
 
-    /**
-     * Optional: Show a single payment details (if needed)
-     */
-    public function show($id)
+    // Admin / System → RELEASE PAYMENT
+    public function release($paymentId)
     {
-        $ownerId = Auth::id();
+        $payment = Payment::findOrFail($paymentId);
 
-        $payment = Payment::with(['booking.warehouse', 'booking.customer'])
-            ->whereHas('booking.warehouse', function ($query) use ($ownerId) {
-                $query->where('owner_id', $ownerId);
-            })
-            ->findOrFail($id);
+        if ($payment->status !== 'escrow') {
+            return back()->with('error', 'Payment not in escrow');
+        }
 
-        return view('owner.payments.show', compact('payment'));
+        DB::transaction(function () use ($payment) {
+
+            $payment->update([
+                'status'      => 'released',
+                'released_at' => now()
+            ]);
+
+            Booking::where('id', $payment->booking_id)
+                ->update(['payment_status' => 'paid']);
+        });
+
+        return back()->with('success', 'Payment released to owner');
+    }
+
+    // REFUND
+    public function refund($paymentId)
+    {
+        $payment = Payment::findOrFail($paymentId);
+
+        DB::transaction(function () use ($payment) {
+
+            $payment->update(['status' => 'refunded']);
+
+            Booking::where('id', $payment->booking_id)
+                ->update(['payment_status' => 'refunded']);
+        });
+
+        return back()->with('success', 'Payment refunded');
     }
 }

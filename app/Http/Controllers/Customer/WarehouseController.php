@@ -6,20 +6,21 @@ use App\Http\Controllers\Controller;
 use App\Models\Warehouse;
 use App\Models\Booking;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use App\Models\Notification;
 use App\Models\User;
+use SimpleSoftwareIO\QrCode\Facades\QrCode; // QR code package
+use Illuminate\Support\Facades\Storage;
 
 class WarehouseController extends Controller
 {
-    // Step 1: Book Page
+    // Step 1: Show booking page
     public function book($id)
     {
         $warehouse = Warehouse::findOrFail($id);
         return view('customer.warehouses.book', compact('warehouse'));
     }
 
-    // Step 2: Calculate Total & Show Summary
+    // Step 2: Calculate total & show summary
     public function calculate(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
@@ -40,19 +41,18 @@ class WarehouseController extends Controller
         ]);
     }
 
-    // Step 3: Agreement Page
+    // Step 3: Agreement page
     public function agreement(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
 
-        // Pass all previous data to agreement
         return view('customer.warehouses.agreement', [
             'warehouse' => $warehouse,
             'data' => $request->all()
         ]);
     }
 
-    // Step 4: Final Confirm Booking
+    // Step 4: Final confirm booking
     public function finalConfirm(Request $request, $id)
     {
         $warehouse = Warehouse::findOrFail($id);
@@ -66,29 +66,30 @@ class WarehouseController extends Controller
             'total_price' => 'required|numeric',
         ]);
 
-        // Create booking but status is "pending" until payment
+        // Create booking with default payment_status = 'unpaid'
         $booking = Booking::create([
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer->id,
-            'user_id' => $customer->id, // ✅ add this
+            'user_id' => $customer->id,
             'area' => $data['area'],
             'items' => $data['items'],
             'items_detail' => $data['items_detail'],
             'months' => $data['months'],
             'total_price' => $data['total_price'],
-            'status' => 'active', // not confirmed yet
+            'status' => 'active',
+            'payment_status' => 'unpaid', // Enum: unpaid, paid, cash, escrow
         ]);
 
         return redirect()->route('customer.payment', $booking->id);
     }
 
-    // Step 5: Payment Page
+    // Step 5: Payment page
     public function payment(Booking $booking)
     {
         return view('customer.warehouses.payment', compact('booking'));
     }
 
-    // Step 6: Store Payment
+    // Step 6: Store payment
     public function paymentStore(Request $request, Booking $booking)
     {
         $data = $request->validate([
@@ -96,32 +97,38 @@ class WarehouseController extends Controller
             'payment_slip' => 'nullable|file|mimes:jpg,png,pdf|max:2048',
         ]);
 
+        // Save payment slip if uploaded
         if ($request->hasFile('payment_slip')) {
             $data['payment_slip'] = $request->file('payment_slip')->store('payment_slips', 'public');
         }
 
+        // Update booking payment info
         $booking->update([
-            'status' => $data['payment_method'] === 'online' ? 'paid' : 'cash_pending',
+            'payment_status' => $data['payment_method'] === 'online' ? 'unpaid' : 'cash', // match enum
             'payment_method' => $data['payment_method'],
             'payment_slip' => $data['payment_slip'] ?? null,
         ]);
-        return redirect()->route('customer.dashboard')
-                         ->with('success','Payment submitted successfully.');
 
-        // Notify admin and warehouse owner
+        // Generate QR code after booking/payment
+        $qrContent = "Booking ID: {$booking->id} | User ID: {$booking->customer_id} | Warehouse ID: {$booking->warehouse_id}";
+        $qrPath = "qrcodes/booking_{$booking->id}.png";
+        QrCode::format('png')->size(250)->generate($qrContent, storage_path("app/public/{$qrPath}"));
+
+        $booking->update(['qr_code' => $qrPath]);
+
+        // Notify admin
         Notification::create([
-            'user_id' => User::where('role','admin')->first()->id,
-            'type' => 'booking',
-            'message' => "New booking payment for {$booking->warehouse->name} by {$booking->customer->name}",
+            'user_id' => User::where('role', 'admin')->first()->id,
+            'message' => "New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$data['payment_method']}",
         ]);
 
+        // Notify customer
         Notification::create([
-            'user_id' => $booking->warehouse->owner_id,
-            'type' => 'booking',
-            'message' => "Booking payment received for your warehouse {$booking->warehouse->name}",
+            'user_id' => $booking->customer_id,
+            'message' => "Your booking #{$booking->id} is confirmed. QR code generated.",
         ]);
 
         return redirect()->route('customer.dashboard')
-                         ->with('success','Payment submitted successfully.');
+                         ->with('success', 'Booking completed successfully. QR code generated.');
     }
 }
