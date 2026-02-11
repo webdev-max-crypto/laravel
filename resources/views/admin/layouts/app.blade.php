@@ -59,18 +59,19 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
                     <span class="badge bg-danger">{{ $unreadNotifications }}</span>
                 @endif
             </button>
-            <ul class="dropdown-menu dropdown-menu-end p-2" style="width:300px;">
-                @forelse($notifications as $notif)
-                    <li class="dropdown-item {{ $notif->is_read ? '' : 'fw-bold' }}">
-                        {{ $notif->message }}
-                        <small class="d-block text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                    </li>
-                @empty
-                    <li class="dropdown-item text-muted">No notifications</li>
-                @endforelse
-                <li><hr class="dropdown-divider"></li>
-                <li><a href="{{ route('admin.notifications.index') }}" class="dropdown-item text-center">View All</a></li>
-            </ul>
+            <ul class="dropdown-menu dropdown-menu-end p-2 notif-dropdown" style="width: 300px; max-height: 400px; overflow-y: auto;">
+    @forelse($notifications as $notif)
+        <li class="dropdown-item {{ $notif->is_read ? '' : 'fw-bold' }}" style="white-space: normal; word-wrap: break-word;">
+            {{ $notif->message }}
+            <small class="d-block text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+        </li>
+    @empty
+        <li class="dropdown-item text-muted">No notifications</li>
+    @endforelse
+    <li><hr class="dropdown-divider"></li>
+    <li><a href="{{ route('admin.notifications.index') }}" class="dropdown-item text-center">View All</a></li>
+</ul>
+
         </div>
 
         <!-- Logout -->
@@ -103,6 +104,10 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
 
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.warehouses.*') ? 'active-link' : '' }}" href="{{ route('admin.warehouses.pending') }}">🏢 Warehouses</a>
+
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.warehouses.approved') ? 'active-link' : '' }}" href="{{ route('admin.warehouses.approved') }}">🏢Active Warehouses</a>
         </li>
 
         
@@ -129,6 +134,14 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
       @if(session('error')) 
           <div class="alert alert-danger">{{ session('error') }}</div> 
       @endif
+
+    @if(!empty($flaggedWarehouses) && $flaggedWarehouses > 0)
+        <div class="alert alert-danger">
+        ⚠️ {{ $flaggedWarehouses }} warehouse(s) are inactive.
+         </div>
+        @endif
+
+
 
       @yield('content')
     </div>

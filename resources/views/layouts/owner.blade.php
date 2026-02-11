@@ -73,21 +73,25 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
                     <span class="badge bg-danger">{{ $unreadNotifications }}</span>
                 @endif
             </button>
-            <ul class="dropdown-menu dropdown-menu-end p-2" style="width:300px;">
-                @forelse($notifications as $notif)
-                    <li class="dropdown-item {{ $notif->is_read ? '' : 'fw-bold' }}">
-                        {{ $notif->message }}
-                        <small class="d-block text-muted">{{ $notif->created_at->diffForHumans() }}</small>
-                        @if(!$notif->is_read)
-                            <a href="{{ route('owner.notifications.read', $notif->id) }}" class="btn btn-sm btn-primary mt-1">Mark as read</a>
-                        @endif
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                @empty
-                    <li class="dropdown-item text-muted">No notifications</li>
-                @endforelse
-                <li><a href="{{ route('owner.notifications.index') }}" class="dropdown-item text-center">View All</a></li>
-            </ul>
+          <ul class="dropdown-menu dropdown-menu-end p-2 notif-dropdown" 
+    style="width: 300px; max-height: 400px; overflow-y: auto;">
+    @forelse($notifications as $notif)
+        <li class="dropdown-item {{ $notif->is_read ? '' : 'fw-bold' }}" 
+            style="white-space: normal; word-wrap: break-word;">
+            {{ $notif->message }}
+            <small class="d-block text-muted">{{ $notif->created_at->diffForHumans() }}</small>
+            @if(!$notif->is_read)
+                <a href="{{ route('owner.notifications.read', $notif->id) }}" 
+                   class="btn btn-sm btn-primary mt-1">Mark as read</a>
+            @endif
+        </li>
+        <li><hr class="dropdown-divider"></li>
+    @empty
+        <li class="dropdown-item text-muted">No notifications</li>
+    @endforelse
+    <li><a href="{{ route('owner.notifications.index') }}" class="dropdown-item text-center">View All</a></li>
+</ul>
+
         </div>
 
         <!-- USER DROPDOWN -->

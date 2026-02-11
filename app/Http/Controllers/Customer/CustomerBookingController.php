@@ -70,4 +70,10 @@ class CustomerBookingController extends Controller
             'qr_code' => $booking->qr_code
         ]);
     }
+    public function invoice($id)
+{
+    $booking = Booking::with(['customer','warehouse'])->findOrFail($id);
+    return view('customer.invoice', compact('booking'));
+}
+
 }

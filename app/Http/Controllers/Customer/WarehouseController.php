@@ -8,7 +8,6 @@ use App\Models\Booking;
 use Illuminate\Http\Request;
 use App\Models\Notification;
 use App\Models\User;
-use SimpleSoftwareIO\QrCode\Facades\QrCode; // QR code package
 use Illuminate\Support\Facades\Storage;
 
 class WarehouseController extends Controller
@@ -66,7 +65,7 @@ class WarehouseController extends Controller
             'total_price' => 'required|numeric',
         ]);
 
-        // Create booking with default payment_status = 'unpaid'
+        // Create booking
         $booking = Booking::create([
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer->id,
@@ -77,7 +76,7 @@ class WarehouseController extends Controller
             'months' => $data['months'],
             'total_price' => $data['total_price'],
             'status' => 'active',
-            'payment_status' => 'unpaid', // Enum: unpaid, paid, cash, escrow
+            'payment_status' => 'unpaid', // unpaid by default
         ]);
 
         return redirect()->route('customer.payment', $booking->id);
@@ -104,31 +103,36 @@ class WarehouseController extends Controller
 
         // Update booking payment info
         $booking->update([
-            'payment_status' => $data['payment_method'] === 'online' ? 'unpaid' : 'cash', // match enum
+            'payment_status' => $data['payment_method'] === 'cash' ? 'cash' : 'pending',
             'payment_method' => $data['payment_method'],
             'payment_slip' => $data['payment_slip'] ?? null,
+            // Temporary placeholder QR path
+            'qr_code' => "qrcodes/placeholder_booking_{$booking->id}.png",
         ]);
 
-        // Generate QR code after booking/payment
-        $qrContent = "Booking ID: {$booking->id} | User ID: {$booking->customer_id} | Warehouse ID: {$booking->warehouse_id}";
-        $qrPath = "qrcodes/booking_{$booking->id}.png";
-        QrCode::format('png')->size(250)->generate($qrContent, storage_path("app/public/{$qrPath}"));
-
-        $booking->update(['qr_code' => $qrPath]);
+        // Create placeholder QR image
+        if (!Storage::disk('public')->exists("qrcodes/placeholder_booking_{$booking->id}.png")) {
+            Storage::disk('public')->put("qrcodes/placeholder_booking_{$booking->id}.png", 'QR code placeholder');
+        }
 
         // Notify admin
         Notification::create([
             'user_id' => User::where('role', 'admin')->first()->id,
             'message' => "New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$data['payment_method']}",
         ]);
+        // Notify owner
+        Notification::create([
+            'user_id' => $booking->warehouse->owner->id, // warehouse ka owner
+            'message' => "New booking #{$booking->id} for your warehouse {$booking->warehouse->name}. Payment: {$data['payment_method']}. Status: " . ($data['payment_method'] === 'online' ? 'paid' : 'unpaid'),
+]);
+
 
         // Notify customer
         Notification::create([
             'user_id' => $booking->customer_id,
-            'message' => "Your booking #{$booking->id} is confirmed. QR code generated.",
+            'message' => "Your booking #{$booking->id} is confirmed. QR code placeholder created.",
         ]);
 
-        return redirect()->route('customer.dashboard')
-                         ->with('success', 'Booking completed successfully. QR code generated.');
+        return redirect()->route('customer.dashboard')->with('success','Booking completed successfully.');
     }
 }

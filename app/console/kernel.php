@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule)
     {
+        // 🔐 Fraud auto-check
         $schedule->command('fraud:auto-check')->daily();
 
         // -------------------------------
@@ -70,22 +71,33 @@ class Kernel extends ConsoleKernel
         $schedule->call(function () {
 
             Warehouse::where('status', 'approved')
-                ->whereDate('last_active', '<', Carbon::now()->subDays(30))
+                ->where(function ($q) {
+                    $q->whereNull('last_active')
+                      ->orWhere('last_active', '<', Carbon::now()->subDays(30));
+                })
                 ->chunk(50, function ($warehouses) {
                     foreach ($warehouses as $wh) {
-                        $wh->update(['status' => 'under_review']);
-                        Log::warning("Warehouse #{$wh->id} set to under_review.");
+                        // ✅ Use flag instead of overwriting status
+                        $wh->update([
+                            'is_flagged' => 1,
+                            'inactive_reason' => 'No activity in last 30 days'
+                        ]);
+
+                        Log::warning("Warehouse #{$wh->id} flagged inactive.");
 
                         // Notify admin
                         Notification::create([
                             'user_id' => 1,
                             'type' => 'warehouse_inactive',
-                            'message' => "Warehouse #{$wh->id} inactive for 30+ days and marked under review."
+                            'message' => "Warehouse #{$wh->id} inactive for 30+ days."
                         ]);
                     }
                 });
 
         })->daily();
+
+        // ✅ Remove duplicate inline warehouse logic
+        // $schedule->command('warehouses:check-inactive')->daily();
     }
 
     protected function commands()

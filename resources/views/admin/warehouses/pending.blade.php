@@ -1,8 +1,6 @@
 @extends('admin.layouts.app')
-
 @section('content')
-
-<h2 class="mb-4">Pending Warehouses</h2>
+<h2 class="mb-4">Warehouses Management</h2>
 
 @if(session('success'))
     <div class="alert alert-success">{{ session('success') }}</div>
@@ -16,24 +14,17 @@
             <th>Location</th>
             <th>Price / Month</th>
             <th>Image</th>
+            <th>Status</th>
             <th>Actions</th>
         </tr>
     </thead>
-
     <tbody>
     @forelse($warehouses as $w)
         <tr>
-            <td>
-                {{ $w->owner->name }} <br>
-                <small>{{ $w->owner->email }}</small>
-            </td>
-
+            <td>{{ $w->owner->name }} <br><small>{{ $w->owner->email }}</small></td>
             <td>{{ $w->name }}</td>
-
             <td>{{ \Illuminate\Support\Str::limit($w->location, 40) }}</td>
-
             <td>{{ $w->price_per_month }}</td>
-
             <td>
                 @if($w->image)
                     <a href="{{ asset('storage/'.$w->image) }}" target="_blank">
@@ -41,30 +32,40 @@
                     </a>
                 @endif
             </td>
-
             <td>
-                <a href="{{ route('admin.warehouses.show', $w->id) }}"
-                   class="btn btn-sm btn-info">View</a>
-
-                <form action="{{ route('admin.warehouses.approve', $w->id) }}"
-                      method="POST" class="d-inline">
-                    @csrf
-                    <button class="btn btn-sm btn-success">Approve</button>
-                </form>
-
-                <form action="{{ route('admin.warehouses.reject', $w->id) }}"
-                      method="POST" class="d-inline">
-                    @csrf
-                    <button class="btn btn-sm btn-danger">Reject</button>
-                </form>
+                @if($w->status === 'pending')
+                    <span class="badge bg-warning">Pending</span>
+                @elseif($w->status === 'approved')
+                    <span class="badge bg-success">
+                        Active
+                        @if($w->active_frequency)
+                            ({{ $w->active_frequency }} times booked)
+                        @endif
+                    </span>
+                @else
+                    <span class="badge bg-secondary">{{ ucfirst($w->status) }}</span>
+                @endif
+            </td>
+            <td>
+                @if($w->status === 'pending')
+                    <form action="{{ route('admin.warehouses.approve', $w->id) }}" method="POST" style="display:inline">
+                        @csrf
+                        <button class="btn btn-sm btn-success">Approve</button>
+                    </form>
+                    <form action="{{ route('admin.warehouses.reject', $w->id) }}" method="POST" style="display:inline">
+                        @csrf
+                        <button class="btn btn-sm btn-danger">Reject</button>
+                    </form>
+                @else
+                    <span class="text-muted">No actions</span>
+                @endif
             </td>
         </tr>
     @empty
         <tr>
-            <td colspan="6" class="text-center">No pending warehouses</td>
+            <td colspan="7" class="text-center">No warehouses found</td>
         </tr>
     @endforelse
     </tbody>
 </table>
-
 @endsection

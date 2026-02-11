@@ -32,4 +32,18 @@ class Warehouse extends Model
     {
         return $this->belongsTo(User::class, 'owner_id');
     }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
+    public function markActive()
+    {
+        $this->update([
+        'last_active' => now(),
+        'is_flagged' => 0,
+        'inactive_reason' => null,
+    ]);
+}
+
 }

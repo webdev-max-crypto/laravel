@@ -11,9 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('orders', function (Blueprint $table) {
-      //
-        });
+        Schema::table('payments', function (Blueprint $table) {
+            $table->string('payment_method')->nullable()->after('status');
+            $table->text('sms_content')->nullable()->after('payment_method');
+            $table->timestamp('payment_date')->nullable()->after('sms_content');
+
+
+    });
     }
 
     /**

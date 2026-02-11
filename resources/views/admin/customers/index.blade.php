@@ -22,8 +22,7 @@
                 <td>{{ $customer->email }}</td>
                 <td>{{ $customer->is_verified ? 'Yes' : 'No' }}</td>
                 <td>
-                    <a href="#" class="btn btn-sm btn-primary">View</a>
-                    <form action="#" method="POST" class="d-inline">
+                    
                         @csrf
                         <button class="btn btn-sm btn-danger">Block</button>
                     </form>

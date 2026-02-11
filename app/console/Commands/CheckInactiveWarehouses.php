@@ -17,21 +17,30 @@ class CheckInactiveWarehouses extends Command
     {
         $threshold = Carbon::now()->subDays(30);
 
-        $warehouses = Warehouse::where('status','approved')
-            ->whereDate('last_active','<',$threshold)
+        $warehouses = Warehouse::where('status', 'approved')
+            ->where(function ($q) use ($threshold) {
+                $q->whereNull('last_active')
+                  ->orWhere('last_active', '<', $threshold);
+            })
+            ->where('is_flagged', 0) // prevent repeat alerts
             ->get();
 
-        foreach($warehouses as $w){
-            $w->update(['status'=>'under_review']);
-            Log::warning("Warehouse {$w->id} set to under_review.");
+        foreach ($warehouses as $w) {
+
+            $w->update([
+                'is_flagged' => 1,
+                'inactive_reason' => 'No activity in last 30 days',
+            ]);
+
+            Log::warning("Warehouse {$w->id} flagged as inactive.");
 
             Notification::create([
-                'user_id'=>1,
-                'type'=>'warehouse_inactive',
-                'message'=>"Warehouse #{$w->id} inactive for 30+ days, marked under review."
+                'user_id' => 1, // admin
+                'type' => 'warehouse_inactive',
+                'message' => "Warehouse #{$w->id} inactive for 30+ days."
             ]);
         }
 
-        $this->info('Inactive warehouses checked: '.count($warehouses));
+        $this->info('Inactive warehouses flagged: ' . $warehouses->count());
     }
 }

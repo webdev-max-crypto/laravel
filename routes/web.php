@@ -6,6 +6,17 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\AuthController;
 
+//-------------------------------
+//Stripe Method
+//-------------------------------
+
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
+use Stripe\Account;
+use Stripe\AccountLink;
+use Stripe\Checkout\Session;
+use Stripe\Transfer;
+
 // -------------------------------
 // ADMIN CONTROLLERS
 // -------------------------------
@@ -37,15 +48,120 @@ use App\Http\Controllers\PaymentController; // Owner payments
 // CUSTOMER CONTROLLERS
 // -------------------------------
 use App\Http\Controllers\CustomerDashboardController;
-use App\Http\Controllers\Customer\CustomerBookingController; // ✅ Correct controller for booking
+use App\Http\Controllers\Customer\CustomerBookingController;
 use App\Http\Controllers\Customer\WarehouseController as CustomerWarehouseController;
 use App\Http\Controllers\Customer\NotificationController as CustomerNotificationController;
 use App\Http\Controllers\Customer\ReportController as CustomerReportController;
 use App\Http\Controllers\Customer\CustomerHistoryController;
+use App\Http\Controllers\Customer\CustomerOrderController;
 
 // -------------------------------
 // GENERAL ROUTES
 // -------------------------------
+
+
+
+
+Route::get('/stripe-key-test', function () {
+    dd(
+        config('services.stripe.secret'),
+        env('STRIPE_SECRET')
+    );
+});
+
+Route::get('/owner/{id}/stripe-onboard', function ($id) {
+    $owner = \App\Models\User::findOrFail($id);
+
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    $account = Account::create([
+        'type' => 'express',
+        'email' => $owner->email,
+    ]);
+
+    $owner->stripe_account_id = $account->id;
+    $owner->save();
+
+    $link = AccountLink::create([
+        'account' => $account->id,
+        'refresh_url' => route('stripe.refresh'),
+        'return_url' => route('stripe.success'),
+        'type' => 'account_onboarding',
+    ]);
+
+    return redirect($link->url);
+})->name('owner.stripe-onboard');
+
+
+
+
+Route::get('/booking/{id}/checkout', function ($id) {
+    $booking = \App\Models\Booking::findOrFail($id);
+
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    $session = Session::create([
+        'payment_method_types' => ['card'],
+        'customer_email' => $booking->customer->email,
+        'line_items' => [[
+            'price_data' => [
+                'currency' => 'usd',
+                'unit_amount' => $booking->total_amount * 100,
+                'product_data' => [
+                    'name' => 'Booking #' . $booking->id,
+                ],
+            ],
+            'quantity' => 1,
+        ]],
+        'mode' => 'payment',
+        'success_url' => route('booking.success', $booking->id),
+        'cancel_url' => route('booking.cancel', $booking->id),
+    ]);
+
+    return redirect($session->url);
+});
+
+Route::get('/booking/{id}/success', function ($id) {
+    $booking = \App\Models\Booking::findOrFail($id);
+
+    $booking->payment_status = 'paid';
+    $booking->payment_ref = request('session_id'); 
+    $booking->owner_amount = $booking->total_amount - $booking->admin_commission;
+    $booking->save();
+
+    return "Payment successful! Admin balance me hold ho gaya.";
+})->name('booking.success');
+
+
+
+
+Route::post('/booking/{id}/release', function ($id) {
+    $booking = \App\Models\Booking::findOrFail($id);
+
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    Transfer::create([
+        'amount' => $booking->owner_amount * 100,
+        'currency' => 'usd',
+        'destination' => $booking->owner->stripe_account_id,
+    ]);
+
+    $booking->payment_status = 'released';
+    $booking->save();
+
+    return redirect()->back()->with('success', 'Payment released to owner!');
+})->name('booking.release');
+
+
+
+
+
+// Default home route
+
+
+
+
+
 Route::get('/', fn() => view('welcome'));
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
@@ -55,6 +171,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/register', [RegisteredUserController::class, 'store']);
     Route::post('/register-user', [AdminController::class, 'register'])->name('admin.register');
 });
+
+// API for SMS receiving (from Android app)
+Route::post('/api/sms/receive', [AdminController::class, 'receiveSMS']);
 
 // Dashboard redirect after login
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
@@ -130,6 +249,7 @@ Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group
 // -------------------------------
 Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group(function () {
 
+    // Dashboard
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
 
     // Notifications
@@ -147,21 +267,28 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
     // Warehouses
     Route::get('/warehouses', [AdminWarehouseController::class,'index'])->name('warehouses.index');
     Route::get('/warehouses/pending', [AdminWarehouseController::class,'pending'])->name('warehouses.pending');
+    Route::get('/warehouses/approved', [AdminWarehouseController::class,'approved'])->name('warehouses.approved.list'); // LIST OF APPROVED
     Route::get('/warehouses/{id}', [AdminWarehouseController::class,'show'])->name('warehouses.show');
-    Route::post('/warehouses/{id}/approve', [AdminWarehouseController::class,'approve'])->name('warehouses.approve');
+    Route::post('/warehouses/{id}/approve', [AdminWarehouseController::class,'approve'])->name('warehouses.approve'); // APPROVE SINGLE
     Route::post('/warehouses/{id}/reject', [AdminWarehouseController::class,'reject'])->name('warehouses.reject');
+    // Approved warehouses list
+    Route::get('/warehouses/approved', [AdminWarehouseController::class, 'approved'])->name('warehouses.approved');
+
 
     // Products / Inventory
     Route::get('/products', [AdminProductController::class,'index'])->name('products.index');
 
     // Orders
     Route::get('/orders', [AdminOrderController::class,'index'])->name('orders.index');
+    Route::get('/bookings/active',[AdminController::class,'activeBookings'])->name('bookings.active');
+    Route::get('/bookings/expired',[AdminController::class,'expiredBookings'])->name('bookings.expired');
+    Route::get('/bookings',[AdminController::class,'bookings'])->name('bookings.index');
 
     // Payments & Escrow
     Route::get('/payments/escrow', [AdminPaymentController::class,'escrow'])->name('payments.escrow');
     Route::post('/payments/{id}/release', [AdminPaymentController::class,'release'])->name('payments.release');
-    Route::get('/escrow', [AdminEscrowController::class,'index']);
-    Route::post('/escrow/{id}/release', [AdminEscrowController::class,'release']);
+    Route::get('/escrow', [AdminEscrowController::class,'index'])->name('escrow.index');
+    Route::post('/escrow/{id}/release', [AdminEscrowController::class,'release'])->name('escrow.release');
 
     // Fraud & Reviews
     Route::get('/fraud', [FraudController::class,'index'])->name('fraud.index');
@@ -219,7 +346,18 @@ Route::middleware(['auth', 'role:customer'])
     // Reports
     Route::get('/warehouse/{id}/report', [CustomerReportController::class,'create'])->name('report.create');
     Route::post('/warehouse/{id}/report', [CustomerReportController::class,'store'])->name('report.store');
+
+    // Orders
+    Route::get('/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
+    Route::post('/order/place', [CustomerOrderController::class, 'placeOrder'])->name('customer.order.place');
+    Route::get('/payment/instructions/{orderId}', [CustomerOrderController::class, 'paymentInstructions'])->name('customer.payment.instructions');
+    Route::get('customer/booking/{id}/invoice', [App\Http\Controllers\Customer\BookingController::class, 'invoice'])
+    ->name('customer.booking.invoice');
+
+    
+    Route::get('/order/status/{orderId}', [CustomerOrderController::class, 'orderStatus'])->name('customer.order.status');
 });
+
 
 // -------------------------------
 // AUTH ROUTES

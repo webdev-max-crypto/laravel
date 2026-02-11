@@ -8,7 +8,7 @@
 @else
 <table>
     <thead>
-@extends('layouts.customer')
+
 
 @section('content')
 <div style="max-width:900px;margin:auto;padding:25px;">

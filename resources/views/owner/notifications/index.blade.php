@@ -2,8 +2,10 @@
 
 @section('content')
 <h3>Notifications</h3>
+<a href="{{ route('owner.dashboard') }}" class="btn btn-sm btn-secondary mb-3">⬅ Back to Dashboard</a>
 
-@foreach($notifications as $notif)
+
+@forelse($notifications as $notif)
 <div class="card mb-2 {{ $notif->is_read ? '' : 'border-primary' }}">
     <div class="card-body">
         {{ $notif->message }}
@@ -13,5 +15,8 @@
         @endif
     </div>
 </div>
-@endforeach
+@empty 
+    <div class="alert alert-info">You have no notifications.</div>
+
+@endforelse
 @endsection
