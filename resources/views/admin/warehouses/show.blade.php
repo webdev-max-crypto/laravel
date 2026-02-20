@@ -35,7 +35,7 @@
 
     <hr>
 
-    <p><strong>Location:</strong> {{ $warehouse->location }}</p>
+    <p><strong>Country:</strong> {{ $warehouse->location }}</p>
     <p><strong>Address:</strong> {{ $warehouse->address }}</p>
     <p><strong>Description:</strong> {{ $warehouse->description }}</p>
     <p><strong>Size:</strong> {{ $warehouse->size }}</p>
@@ -45,6 +45,17 @@
     <p><strong>Total Space:</strong> {{ $warehouse->total_space }}</p>
     <p><strong>Available Space:</strong> {{ $warehouse->available_space }}</p>
     <p><strong>Price / Month:</strong> {{ $warehouse->price_per_month }}</p>
+
+    <hr>
+
+    {{-- Payment Settings --}}
+    <p><strong>Preferred Payment Method:</strong> {{ ucfirst($warehouse->preferred_payment_method) }}</p>
+
+    @if($warehouse->preferred_payment_method === 'jazzcash')
+        <p><strong>JazzCash Number:</strong> {{ $warehouse->jazzcash_number ?? 'N/A' }}</p>
+    @elseif($warehouse->preferred_payment_method === 'stripe')
+        <p><strong>Stripe Account ID:</strong> {{ $warehouse->stripe_account_id ?? 'N/A' }}</p>
+    @endif
 
     <hr>
 

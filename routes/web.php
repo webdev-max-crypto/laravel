@@ -33,8 +33,9 @@ use App\Http\Controllers\Admin\ReviewController;
 use App\Http\Controllers\Admin\ReportController as AdminReportController;
 use App\Http\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
-use App\Http\Controllers\Admin\EscrowController as AdminEscrowController;
+use App\Http\Controllers\Admin\AdminEscrowController as AdminEscrowController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\Admin\BookingController as AdminBookingController;
 
 // -------------------------------
 // OWNER CONTROLLERS
@@ -199,7 +200,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-// -------------------------------
+/// -------------------------------
 // OWNER ROUTES
 // -------------------------------
 Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group(function () {
@@ -238,11 +239,17 @@ Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group
 
     // Payments
     Route::get('/payments', [PaymentController::class, 'ownerIndex'])->name('payments');
+    Route::post('/payments/stripe/{bookingId}', [PaymentController::class, 'ownerStripePay'])->name('payments.stripe');
+    Route::post('/payments/jazzcash/{bookingId}', [PaymentController::class, 'ownerJazzCashPay'])->name('payments.jazzcash');
+
+    // **Owner Balance Page**
+    Route::get('/balance', [PaymentController::class, 'ownerBalance'])->name('balances');
 
     // Help & Support
     Route::get('/help', fn() => view('owner.help.index'))->name('help');
     Route::post('/help', fn(\Illuminate\Http\Request $request) => redirect()->back()->with('success', 'Your message has been sent!'));
 });
+
 
 // -------------------------------
 // ADMIN ROUTES
@@ -283,12 +290,39 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
     Route::get('/bookings/active',[AdminController::class,'activeBookings'])->name('bookings.active');
     Route::get('/bookings/expired',[AdminController::class,'expiredBookings'])->name('bookings.expired');
     Route::get('/bookings',[AdminController::class,'bookings'])->name('bookings.index');
+    Route::get('/admin/release/{id}', 
+    [AdminOrderController::class,'releasePage'])
+    ->name('admin.release.page');
+     Route::post('bookings/{id}/release', [AdminBookingController::class, 'release'])
+        ->name('bookings.release');
+        Route::post('admin/bookings/{booking}/pay-stripe', [AdminBookingController::class, 'payStripe'])
+    ->name('admin.bookings.pay-stripe');
+
+    Route::get('admin/bookings/{booking}/release-payment', [AdminBookingController::class, 'releasePaymentPage'])
+    ->name('admin.bookings.release-payment');
+    
+
+
+     // Release payment page
+    Route::get('bookings/{id}/release', [AdminOrderController::class, 'releasePage'])
+        ->name('bookings.releasePage');
+        // Confirm release (POST)
+
+Route::post('bookings/{id}/release', [AdminOrderController::class, 'confirmRelease'])
+     ->name('bookings.confirmRelease');
 
     // Payments & Escrow
     Route::get('/payments/escrow', [AdminPaymentController::class,'escrow'])->name('payments.escrow');
+
+    // Admin: All owners balances page
+Route::get('/balances', [AdminPaymentController::class, 'ownersBalance'])
+    ->name('balances');
+
+
+    
     Route::post('/payments/{id}/release', [AdminPaymentController::class,'release'])->name('payments.release');
     Route::get('/escrow', [AdminEscrowController::class,'index'])->name('escrow.index');
-    Route::post('/escrow/{id}/release', [AdminEscrowController::class,'release'])->name('escrow.release');
+    Route::post('/escrow/{id}/release', [AdminEscrowController::class,'release-payment'])->name('escrow.release-payment');
 
     // Fraud & Reviews
     Route::get('/fraud', [FraudController::class,'index'])->name('fraud.index');

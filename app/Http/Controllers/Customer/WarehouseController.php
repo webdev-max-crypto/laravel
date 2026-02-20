@@ -9,6 +9,8 @@ use Illuminate\Http\Request;
 use App\Models\Notification;
 use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Stripe\Stripe;
+use Stripe\PaymentIntent;
 
 class WarehouseController extends Controller
 {
@@ -65,7 +67,6 @@ class WarehouseController extends Controller
             'total_price' => 'required|numeric',
         ]);
 
-        // Create booking
         $booking = Booking::create([
             'warehouse_id' => $warehouse->id,
             'customer_id' => $customer->id,
@@ -76,7 +77,7 @@ class WarehouseController extends Controller
             'months' => $data['months'],
             'total_price' => $data['total_price'],
             'status' => 'active',
-            'payment_status' => 'unpaid', // unpaid by default
+            'payment_status' => 'unpaid',
         ]);
 
         return redirect()->route('customer.payment', $booking->id);
@@ -85,7 +86,24 @@ class WarehouseController extends Controller
     // Step 5: Payment page
     public function payment(Booking $booking)
     {
-        return view('customer.warehouses.payment', compact('booking'));
+        $stripePaymentIntent = null;
+        $minStripePKR = 140; // minimum Stripe payment
+
+        if($booking->total_price >= $minStripePKR){
+            Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            $stripePaymentIntent = PaymentIntent::create([
+                'amount' => $booking->total_price * 100,
+                'currency' => 'pkr',
+                'metadata' => ['booking_id' => $booking->id],
+            ]);
+        }
+
+        return view('customer.warehouses.payment', [
+            'booking' => $booking,
+            'paymentIntent' => $stripePaymentIntent,
+            'minStripePKR' => $minStripePKR
+        ]);
     }
 
     // Step 6: Store payment
@@ -93,45 +111,50 @@ class WarehouseController extends Controller
     {
         $data = $request->validate([
             'payment_method' => 'required|in:cash,online',
-            'payment_slip' => 'nullable|file|mimes:jpg,png,pdf|max:2048',
+            'online_method'  => 'nullable|in:stripe,jazzcash',
+            'payment_slip'   => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
-        // Save payment slip if uploaded
+        $paymentMethod = $data['payment_method'];
+        $onlineMethod  = $data['online_method'] ?? null;
+
+        // Require payment slip for Cash or JazzCash
+        if ($paymentMethod === 'cash' || ($paymentMethod === 'online' && $onlineMethod === 'jazzcash')) {
+            if (!$request->hasFile('payment_slip')) {
+                return back()->withErrors(['payment_slip' => 'Payment slip is required for this payment method.'])->withInput();
+            }
+        }
+
         if ($request->hasFile('payment_slip')) {
             $data['payment_slip'] = $request->file('payment_slip')->store('payment_slips', 'public');
         }
 
-        // Update booking payment info
+        // Determine payment status
+        if ($paymentMethod === 'cash') {
+            $paymentStatus = 'cash';
+        } elseif ($paymentMethod === 'online') {
+            $paymentStatus = 'paid'; // Stripe or JazzCash
+        } else {
+            $paymentStatus = 'unpaid';
+        }
+
         $booking->update([
-            'payment_status' => $data['payment_method'] === 'cash' ? 'cash' : 'pending',
-            'payment_method' => $data['payment_method'],
-            'payment_slip' => $data['payment_slip'] ?? null,
-            // Temporary placeholder QR path
-            'qr_code' => "qrcodes/placeholder_booking_{$booking->id}.png",
+            'payment_method' => $paymentMethod,
+            'online_method'  => $onlineMethod,
+            'payment_slip'   => $data['payment_slip'] ?? null,
+            'payment_status' => $paymentStatus,
+            'qr_code'        => "qrcodes/placeholder_booking_{$booking->id}.png",
         ]);
 
-        // Create placeholder QR image
         if (!Storage::disk('public')->exists("qrcodes/placeholder_booking_{$booking->id}.png")) {
             Storage::disk('public')->put("qrcodes/placeholder_booking_{$booking->id}.png", 'QR code placeholder');
         }
 
-        // Notify admin
-        Notification::create([
-            'user_id' => User::where('role', 'admin')->first()->id,
-            'message' => "New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$data['payment_method']}",
-        ]);
-        // Notify owner
-        Notification::create([
-            'user_id' => $booking->warehouse->owner->id, // warehouse ka owner
-            'message' => "New booking #{$booking->id} for your warehouse {$booking->warehouse->name}. Payment: {$data['payment_method']}. Status: " . ($data['payment_method'] === 'online' ? 'paid' : 'unpaid'),
-]);
-
-
-        // Notify customer
-        Notification::create([
-            'user_id' => $booking->customer_id,
-            'message' => "Your booking #{$booking->id} is confirmed. QR code placeholder created.",
-        ]);
+        // Notifications
+        $adminId = User::where('role','admin')->first()->id;
+        Notification::create(['user_id'=>$adminId,'message'=>"New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":'')]);
+        Notification::create(['user_id'=>$booking->warehouse->owner->id,'message'=>"New booking #{$booking->id} for your warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":'').". Status: {$paymentStatus}"]);
+        Notification::create(['user_id'=>$booking->customer_id,'message'=>"Your booking #{$booking->id} is confirmed. Payment status: {$paymentStatus}. QR code placeholder created."]);
 
         return redirect()->route('customer.dashboard')->with('success','Booking completed successfully.');
     }

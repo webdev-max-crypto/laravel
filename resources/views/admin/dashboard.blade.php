@@ -1,7 +1,6 @@
 @extends('admin.layouts.app')
 
 @section('content')
-
 <div class="container mt-4">
 
     <h1 class="mb-4 text-center">Admin Dashboard</h1>
@@ -39,7 +38,6 @@
     </div>
 
     <div class="row mt-3">
-
         {{-- Active Bookings --}}
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm text-center">
@@ -50,18 +48,29 @@
             </div>
         </div>
 
-        {{-- Escrow Payments --}}
+        {{-- Total Admin Commission --}}
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm text-center">
                 <div class="card-body">
-                    <h5 class="text-muted">Escrow Payments</h5>
-                    <h2 class="fw-bold">{{ $escrowPayments }}</h2>
+                    <h5 class="text-muted">Total Admin Commission</h5>
+                    <h2 class="fw-bold">Rs {{ number_format($totalCommission,2) }}</h2>
                 </div>
             </div>
         </div>
+    </div>
 
+    
+
+        {{-- Released Bookings --}}
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm text-center">
+                <div class="card-body">
+                    <h5 class="text-muted">Released Bookings</h5>
+                    <h2 class="fw-bold">{{ $releasedBookings }}</h2>
+                </div>
+            </div>
+        </div>
     </div>
 
 </div>
-
 @endsection

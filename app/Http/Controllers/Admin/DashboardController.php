@@ -14,16 +14,39 @@ class DashboardController extends Controller
     // -----------------------------
     // Admin Dashboard Main View
     // -----------------------------
-    public function index()
+  public function index()
     {
+        // Fetch all relevant bookings
+        $bookings = Booking::whereIn('payment_status', ['paid','escrow','released'])->get();
+
+        $totalCommission = 0;
+        $commissionPending = 0;
+        $commissionReleased = 0;
+
+        foreach($bookings as $booking){
+            // Calculate admin commission (default 10% if not set)
+            $commission = $booking->admin_commission ?? ($booking->total_price * 0.1);
+            $totalCommission += $commission;
+
+            if($booking->payment_status === 'released'){
+                $commissionReleased += $commission;
+            } else {
+                $commissionPending += $commission;
+            }
+        }
+
         return view('admin.dashboard', [
             'users' => User::count(),
             'warehouses' => Warehouse::count(),
             'pendingWarehouses' => Warehouse::where('status','pending')->count(),
             'activeBookings' => Booking::where('status','active')->count(),
-            'escrowPayments' => Payment::where('status','escrow')->count(),
+            'escrowPayments' => Booking::whereIn('payment_status',['paid','escrow'])->count(),
             'paidBookings' => Booking::where('payment_status','paid')->count(),
             'releasedBookings' => Booking::where('payment_status','released')->count(),
+
+            'totalCommission' => $totalCommission,
+            'adminCommissionPending' => $commissionPending,
+            'adminCommissionReleased' => $commissionReleased,
         ]);
     }
 

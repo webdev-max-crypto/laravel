@@ -115,6 +115,9 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.orders.*') ? 'active-link' : '' }}" href="{{ route('admin.orders.index') }}">📝 Orders</a>
         </li>
+        <li class="nav-item">
+            <a class="nav-link {{ request()->routeIs('admin.balances') ? 'active-link' : '' }}" href="{{ route('admin.balances') }}">💰 Balances</a>
+        </li>
 
         <li class="nav-item">
             <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active-link' : '' }}" href="{{ route('admin.reports.index') }}">📊 Reports</a>
@@ -140,6 +143,8 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
         ⚠️ {{ $flaggedWarehouses }} warehouse(s) are inactive.
          </div>
         @endif
+       
+
 
 
 

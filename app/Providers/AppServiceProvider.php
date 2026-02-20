@@ -4,7 +4,10 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
+use Illuminate\Notifications\DatabaseNotification;
+use App\Models\Booking;
+use App\Models\CustomNotification; // aapka custom model
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,9 +22,20 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Bootstrap any application services.
      */
-    public function boot(): void
+    public function boot()
     {
-        //
+        // View composer for released payments
+        View::composer('admin.layouts.app', function ($view) {
+            $releasedPayments = Booking::where('payment_status','released')
+                                ->latest()
+                                ->take(3)
+                                ->get();
+
+            $view->with('releasedPayments', $releasedPayments);
+        });
+
+        // Tell Laravel to use custom notifications table
+       
     }
 
     /**

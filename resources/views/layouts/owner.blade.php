@@ -121,7 +121,9 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())
         <li><a href="{{ route('owner.warehouses.index') }}" class="nav-link {{ request()->routeIs('owner.warehouses.*') ? 'active-link' : '' }}">🏢 My Warehouses</a></li>
         <li><a href="{{ route('owner.bookings') }}" class="nav-link {{ request()->routeIs('owner.bookings') ? 'active-link' : '' }}">📦 My Bookings</a></li>
         <li><a href="{{ route('owner.payments') }}" class="nav-link {{ request()->routeIs('owner.payments') ? 'active-link' : '' }}">💸 Payments</a></li>
+        <li><a href="{{ route('owner.balances') }}" class="nav-link {{ request()->routeIs('owner.balances') ? 'active-link' : '' }}">💰 Balance</a></li>
         <li><a href="{{ route('owner.help') }}" class="nav-link {{ request()->routeIs('owner.help') ? 'active-link' : '' }}">🆘 Help & Support</a></li>
+
     </ul>
 </div>
 

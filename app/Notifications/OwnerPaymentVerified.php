@@ -9,19 +9,30 @@ class OwnerPaymentVerified extends Notification
 {
     use Queueable;
 
-    public function __construct(public $order) {}
+    public $booking;
+
+    public function __construct($booking)
+    {
+        $this->booking = $booking;
+    }
 
     public function via($notifiable)
     {
-        return ['database'];
+        return ['database']; // only database notifications
     }
 
-    public function toArray($notifiable)
+    public function toDatabase($notifiable)
     {
+        // Directly match your table columns
         return [
-            'title' => 'New Payment Received',
-            'message' => 'Order #' . $this->order->id . ' payment verified',
-            'order_id' => $this->order->id
+            'user_id' => $notifiable->id,
+            'message' => "Order #{$this->booking->id} payment verified",
+            'data' => json_encode([
+                'title' => 'New Payment Received',
+                'message' => "Order #{$this->booking->id} payment verified",
+                'order_id' => $this->booking->id
+            ]),
+            'is_read' => 0
         ];
     }
 }

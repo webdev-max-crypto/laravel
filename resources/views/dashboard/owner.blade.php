@@ -58,14 +58,7 @@
 
     <!-- Actions -->
     <div class="card shadow p-4 mt-4">
-        <h3>Notifications</h3>
-        <ul>
-    @forelse($notifications as $notification)
-        <li>{{ $notification->message }} - <small>{{ $notification->created_at->diffForHumans() }}</small></li>
-    @empty
-        <li>No notifications</li>
-    @endforelse
-        </ul>
+      
 
         <h4>Quick Actions</h4>
 

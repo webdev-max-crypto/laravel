@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Payment;
-use App\Models\User;
 use App\Models\Booking;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -15,133 +14,117 @@ use Stripe\Transfer;
 
 class OrderController extends Controller
 {
-    // -----------------------------
-    // Orders page
-    // -----------------------------
+    // ---------------------------------
+    // Orders Page
+    // ---------------------------------
     public function index()
     {
         $pendingOrders = Order::where('payment_status', 'pending')->get();
         $paidOrders = Order::where('payment_status', 'paid')->get();
-        $bookings = Booking::with(['customer','owner','warehouse','payment'])->orderBy('created_at','desc')->get();
 
-        return view('admin.orders.index', compact('bookings','pendingOrders', 'paidOrders'));
+        $bookings = Booking::with([
+                            'customer',
+                            'warehouse.owner',
+                            'payment'
+                        ])
+                        ->orderBy('created_at','desc')
+                        ->get();
+
+        return view('admin.orders.index', compact('bookings','pendingOrders','paidOrders'));
     }
 
-    // -----------------------------
-    // Admin release payment to owner (Stripe)
-    // -----------------------------
-    public function releasePayment($bookingId)
+    // ---------------------------------
+    // Show Release Page
+    // ---------------------------------
+    public function releasePage($id)
     {
-        $booking = Booking::with('owner')->findOrFail($bookingId);
+        $booking = Booking::with(['customer','warehouse.owner'])
+                    ->findOrFail($id);
 
-        if($booking->payment_status !== 'paid'){
-            return redirect()->back()->with('error', 'Booking not paid yet.');
-        }
+        return view('admin.bookings.releasePage', compact('booking'));
+    }
 
-        if(!$booking->owner || !$booking->owner->stripe_account_id){
-            return redirect()->back()->with('error', 'Owner Stripe account not connected.');
-        }
+    // ---------------------------------
+    // Confirm & Process Release
+    // ---------------------------------
+   public function confirmRelease(Request $request, $id)
+{
+    $booking = Booking::with('warehouse.owner')->findOrFail($id);
 
-        Stripe::setApiKey(env('STRIPE_SECRET'));
+    if ($booking->payment_status !== 'paid') {
+        return back()->with('error', 'Booking not eligible for release.');
+    }
 
-        try {
-            Transfer::create([
-                'amount' => $booking->owner_amount * 100, // cents
+    $owner = $booking->warehouse->owner;
+    if (!$owner) {
+        return back()->with('error', 'Owner not found.');
+    }
+
+    $request->validate([
+        'method' => 'required|in:stripe,jazzcash',
+        'owner_jazzcash' => 'nullable|string',
+        'payment_proof' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
+    ]);
+
+    $amount = $booking->owner_amount ?? $booking->total_price;
+
+    // Upload payment proof
+    if ($request->hasFile('payment_proof')) {
+        $file = $request->file('payment_proof');
+        $filename = time() . '_' . $file->getClientOriginalName();
+        $file->storeAs('public/payment_proofs', $filename);
+        $booking->update(['payment_proof' => $filename]);
+    }
+
+    try {
+        // Stripe transfer
+        if ($request->method === 'stripe') {
+            if (!$owner->stripe_account_id) {
+                return back()->with('error', 'Owner Stripe account not connected.');
+            }
+
+            \Stripe\Stripe::setApiKey(env('STRIPE_SECRET'));
+
+            \Stripe\Transfer::create([
+                'amount' => intval($amount * 100), // amount in cents
                 'currency' => 'usd',
-                'destination' => $booking->owner->stripe_account_id,
+                'destination' => $owner->stripe_account_id,
             ]);
+        }
 
-            $booking->payment_status = 'released';
-            $booking->save();
-
-            // Notify Owner
-            if($booking->owner){
-                Notification::send($booking->owner, new OwnerPaymentVerified($booking));
+        // JazzCash transfer (assume manually done)
+        if ($request->method === 'jazzcash') {
+            if (!$request->owner_jazzcash) {
+                return back()->with('error', 'JazzCash number required.');
             }
 
-            return redirect()->back()->with('success', 'Payment released to owner successfully!');
-        } catch (\Exception $e){
-            return redirect()->back()->with('error', 'Stripe transfer failed: '.$e->getMessage());
+            $owner->update(['jazzcash_number' => $request->owner_jazzcash]);
         }
-    }
 
-    // -----------------------------
-    // Receive SMS (payment verification)
-    // -----------------------------
-    public function receiveSMS(Request $request)
-    {
-        $validated = $request->validate([
-            'sender' => 'required|string',
-            'message' => 'required|string',
-            'received_at' => 'required|date'
+        // Update booking status to released
+        $booking->update(['payment_status' => 'released']);
+
+        // -------------------------------
+        // Insert notification manually
+        // -------------------------------
+        \Illuminate\Support\Facades\DB::table('notifications')->insert([
+            'user_id'    => $owner->id,
+            'message'    => "Payment of Rs {$booking->total_price} released for booking #{$booking->id}",
+            'data'       => json_encode([
+                'title' => 'Payment Released',
+                'message' => "Order #{$booking->id} payment released successfully",
+                'order_id' => $booking->id
+            ]),
+            'is_read'    => 0,
+            'type'       => 'OwnerPaymentVerified',
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        $transactionData = $this->parseBankSMS($validated['message']);
+        return redirect()->route('admin.orders.index')
+                         ->with('success', 'Payment released successfully!');
 
-        if (!$transactionData) {
-            return response()->json(['success' => false]);
-        }
-
-        $payment = Payment::where('status', 'pending')
-            ->where('amount', $transactionData['amount'])
-            ->first();
-
-        if (!$payment) {
-            return response()->json(['success' => false]);
-        }
-
-        // Update payment
-        $payment->update([
-            'transaction_id' => $transactionData['transaction_id'],
-            'payment_method' => $transactionData['method'],
-            'sms_content' => $validated['message'],
-            'status' => 'verified',
-            'payment_date' => $validated['received_at']
-        ]);
-
-        // Update booking
-        $booking = $payment->booking;
-        if($booking){
-            $booking->update(['payment_status'=>'paid']);
-            // Notify Owner
-            if($booking->owner){
-                Notification::send($booking->owner, new OwnerPaymentVerified($booking));
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Payment verified & owner notified'
-        ]);
+    } catch (\Exception $e) {
+        return back()->with('error', 'Transfer failed: ' . $e->getMessage());
     }
-
-    // -----------------------------
-    // Parse Bank SMS
-    // -----------------------------
-    private function parseBankSMS($message)
-    {
-        if(stripos($message,'jazz')!==false){
-            preg_match('/Rs\.?\s*([\d,]+)/i',$message,$amount);
-            preg_match('/TID[:\s]*([\w\d]+)/i',$message,$tid);
-
-            return [
-                'method'=>'JazzCash',
-                'amount'=>floatval(str_replace(',','',$amount[1] ?? 0)),
-                'transaction_id'=>$tid[1] ?? null
-            ];
-        }
-
-        if(stripos($message,'easypaisa')!==false){
-            preg_match('/Rs\.?\s*([\d,]+)/i',$message,$amount);
-            preg_match('/ref[:\s]*([\w\d]+)/i',$message,$ref);
-
-            return [
-                'method'=>'EasyPaisa',
-                'amount'=>floatval(str_replace(',','',$amount[1] ?? 0)),
-                'transaction_id'=>$ref[1] ?? null
-            ];
-        }
-
-        return null;
-    }
-}
+}}

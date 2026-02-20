@@ -23,6 +23,9 @@ class Warehouse extends Model
         'total_space',
         'available_space',
         'price_per_month',
+         'jazzcash_number',
+        'stripe_account_id',
+        'preferred_payment_method',
         'status',
         'last_active',
     ];

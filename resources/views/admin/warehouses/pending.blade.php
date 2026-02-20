@@ -56,6 +56,7 @@
                         @csrf
                         <button class="btn btn-sm btn-danger">Reject</button>
                     </form>
+                    <a href="{{ route('admin.warehouses.show', $w->id) }}" class="btn btn-sm btn-info">View Details</a>
                 @else
                     <span class="text-muted">No actions</span>
                 @endif
