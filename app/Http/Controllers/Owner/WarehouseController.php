@@ -79,10 +79,15 @@ class WarehouseController extends Controller
         $admin = User::where('role','admin')->first();
         if($admin){
             Notification::create([
-                'user_id'=>$admin->id,
-                'type'=>'warehouse',
-                'message'=>"New warehouse added: {$warehouse->name} by owner ".Auth::user()->name,
-            ]);
+    'user_id' => $admin->id,
+    'type' => 'warehouse',
+    'message' => "New warehouse added: {$warehouse->name} by owner " . Auth::user()->name,
+    'data' => json_encode([
+        'warehouse_id' => $warehouse->id,
+        'warehouse_name' => $warehouse->name,
+        'owner' => Auth::user()->name
+    ])
+]);
         }
 
         return redirect()->route('owner.warehouses.index')->with('success','Warehouse submitted for approval.');

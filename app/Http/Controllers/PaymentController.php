@@ -20,7 +20,7 @@ class PaymentController extends Controller
         // Fetch all bookings for this owner's warehouses
         $bookings = Booking::whereHas('warehouse', function($q) use ($ownerId) {
             $q->where('owner_id', $ownerId);
-        })->with(['customer','warehouse'])
+        })->with(['customer','warehouse','payment'])
           ->orderBy('created_at','desc')
           ->get();
 
@@ -57,79 +57,77 @@ class PaymentController extends Controller
      * Stripe payout for owner
      */
     public function ownerStripePay(Request $request, $bookingId)
-    {
-        $booking = Booking::where('id', $bookingId)
-            ->whereHas('warehouse', function($q) {
-                $q->where('owner_id', Auth::id());
-            })->with('warehouse')
-            ->firstOrFail();
+{
+    $booking = Booking::where('id', $bookingId)
+        ->whereHas('warehouse', function($q) {
+            $q->where('owner_id', Auth::id());
+        })->with('warehouse')->firstOrFail();
 
-        if($booking->payment_status == 'paid'){
-            return back()->with('info', 'Payment already completed.');
-        }
-
-        $stripeAccountId = $booking->warehouse->stripe_account_id;
-
-        if(!$stripeAccountId){
-            return back()->with('error', 'Stripe account not linked.');
-        }
-
-        Stripe::setApiKey(env('STRIPE_SECRET'));
-
-        try {
-            $paymentIntent = PaymentIntent::create([
-                'amount' => intval($booking->owner_amount * 100), // cents
-                'currency' => 'usd',
-                'payment_method_types' => ['card'],
-                'transfer_data' => [
-                    'destination' => $stripeAccountId,
-                ],
-                'metadata' => [
-                    'booking_id' => $booking->id,
-                    'owner_id' => Auth::id(),
-                ],
-            ]);
-
-            // Mark owner amount as paid
-            $booking->payment_status = 'paid';
-            $booking->save();
-
-            // Update owner's balance
-            $owner = Auth::user();
-            $owner->balance = ($owner->balance ?? 0) + $booking->owner_amount;
-            $owner->save();
-
-            return back()->with('success', 'Payment sent to Stripe successfully.');
-
-        } catch (\Exception $e) {
-            return back()->with('error', 'Stripe error: ' . $e->getMessage());
-        }
+    if($booking->payment_status == 'paid'){
+        return back()->with('info', 'Payment already completed.');
     }
 
-    /**
-     * JazzCash payment simulation
-     */
-    public function ownerJazzCashPay(Request $request, $bookingId)
-    {
-        $booking = Booking::where('id', $bookingId)
-            ->whereHas('warehouse', function($q) {
-                $q->where('owner_id', Auth::id());
-            })->with('warehouse')
-            ->firstOrFail();
+    $stripeAccountId = $booking->warehouse->stripe_account_id;
+    if(!$stripeAccountId){
+        return back()->with('error', 'Stripe account not linked.');
+    }
 
-        if($booking->payment_status == 'paid'){
-            return back()->with('info', 'Payment already completed.');
+    Stripe::setApiKey(env('STRIPE_SECRET'));
+
+    try {
+        $paymentIntent = PaymentIntent::create([
+            'amount' => intval(($booking->owner_amount ?? ($booking->total_price*0.9)) * 100),
+            'currency' => 'usd',
+            'payment_method_types' => ['card'],
+            'transfer_data' => ['destination' => $stripeAccountId],
+            'metadata' => ['booking_id' => $booking->id,'owner_id' => Auth::id()],
+        ]);
+
+        // 🔹 ADD Payment Proof
+        if ($request->hasFile('payment_proof')) {
+            $booking->payment_proof = $request->file('payment_proof')->store('payment_proofs','public');
         }
 
-        // Mark as paid
         $booking->payment_status = 'paid';
         $booking->save();
 
         // Update owner's balance
         $owner = Auth::user();
-        $owner->balance = ($owner->balance ?? 0) + $booking->owner_amount;
+        $owner->balance = ($owner->balance ?? 0) + ($booking->owner_amount ?? ($booking->total_price*0.9));
         $owner->save();
 
-        return back()->with('success', 'Payment marked as received via JazzCash.');
+        return back()->with('success', 'Payment sent to Stripe successfully.');
+
+    } catch (\Exception $e) {
+        return back()->with('error', 'Stripe error: ' . $e->getMessage());
     }
 }
+    /**
+     * JazzCash payment simulation
+     */
+    public function ownerJazzCashPay(Request $request, $bookingId)
+{
+    $booking = Booking::where('id', $bookingId)
+        ->whereHas('warehouse', function($q) {
+            $q->where('owner_id', Auth::id());
+        })->with('warehouse')->firstOrFail();
+
+    if($booking->payment_status == 'paid'){
+        return back()->with('info', 'Payment already completed.');
+    }
+
+    // 🔹 ADD Payment Proof
+    if ($request->hasFile('payment_proof')) {
+        $booking->payment_proof = $request->file('payment_proof')->store('payment_proofs','public');
+    }
+
+    $booking->payment_status = 'paid';
+    $booking->save();
+
+    // Update owner's balance
+    $owner = Auth::user();
+    $owner->balance = ($owner->balance ?? 0) + ($booking->owner_amount ?? ($booking->total_price*0.9));
+    $owner->save();
+
+    return back()->with('success', 'Payment marked as received via JazzCash.');
+}}

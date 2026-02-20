@@ -26,6 +26,7 @@
                 <th>Amount</th>
                 <th>Status</th>
                 <th>Date</th>
+                
             </tr>
         </thead>
         <tbody>
@@ -37,6 +38,8 @@
                 <td>Rs {{ number_format($payment->owner_amount ?? ($payment->total_price * 0.9),2) }}</td>
                 <td>{{ ucfirst($payment->payment_status) }}</td>
                 <td>{{ $payment->created_at->format('d M, Y') }}</td>
+                
+
             </tr>
             @endforeach
         </tbody>

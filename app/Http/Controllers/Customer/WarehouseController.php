@@ -151,11 +151,44 @@ class WarehouseController extends Controller
         }
 
         // Notifications
-        $adminId = User::where('role','admin')->first()->id;
-        Notification::create(['user_id'=>$adminId,'message'=>"New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":'')]);
-        Notification::create(['user_id'=>$booking->warehouse->owner->id,'message'=>"New booking #{$booking->id} for your warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":'').". Status: {$paymentStatus}"]);
-        Notification::create(['user_id'=>$booking->customer_id,'message'=>"Your booking #{$booking->id} is confirmed. Payment status: {$paymentStatus}. QR code placeholder created."]);
+$admin = User::where('role','admin')->first();
 
+if($admin){
+    Notification::create([
+        'user_id' => $admin->id,
+        'type'    => 'new_booking',
+        'message' => "New booking #{$booking->id} for warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":''),
+        'data'    => json_encode([
+            'booking_id' => $booking->id,
+            'role'       => 'admin'
+        ]),
+        'is_read' => 0
+    ]);
+}
+
+// Owner notification
+Notification::create([
+    'user_id' => $booking->warehouse->owner->id,
+    'type'    => 'new_booking',
+    'message' => "New booking #{$booking->id} for your warehouse {$booking->warehouse->name}. Payment: {$paymentMethod}".($onlineMethod?" ({$onlineMethod})":'').". Status: {$paymentStatus}",
+    'data'    => json_encode([
+        'booking_id' => $booking->id,
+        'role'       => 'owner'
+    ]),
+    'is_read' => 0
+]);
+
+// Customer notification
+Notification::create([
+    'user_id' => $booking->customer_id,
+    'type'    => 'booking_confirmed',
+    'message' => "Your booking #{$booking->id} is confirmed. Payment status: {$paymentStatus}.",
+    'data'    => json_encode([
+        'booking_id' => $booking->id,
+        'role'       => 'customer'
+    ]),
+    'is_read' => 0
+]);
         return redirect()->route('customer.dashboard')->with('success','Booking completed successfully.');
     }
 }

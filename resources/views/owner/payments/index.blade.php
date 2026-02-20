@@ -20,7 +20,8 @@
             <th>Warehouse</th>
             <th>Customer</th>
             <th>Total Price (PKR)</th>
-            <th>Owner Amount</th>
+            <th>Owner Amount (PKR)</th>
+            <th>Payment Proof</th>
             <th>Payment Method</th>
             <th>Payment Status</th>
             <th>Action</th>
@@ -32,29 +33,55 @@
             <td>{{ $booking->id }}</td>
             <td>{{ $booking->warehouse->name }}</td>
             <td>{{ $booking->customer->name }}</td>
-            <td>{{ number_format($booking->total_price,2) }}</td>
-            <td>{{ number_format($booking->owner_amount,2) }}</td>
-            <td>{{ ucfirst($booking->warehouse->preferred_payment_method) }}</td>
+
+            {{-- Total Price --}}
+            <td>Rs. {{ number_format($booking->total_price ?? 0, 2) }}</td>
+
+            {{-- Owner Amount --}}
+            <td>Rs. {{ number_format($booking->owner_amount ?? ($booking->total_price * 0.9), 2) }}</td>
+
+            {{-- Payment Proof (from payments table) --}}
+            <td>
+    @if($booking->payment_proof) 
+        <a href="{{ asset('storage/' . $booking->payment_proof) }}" target="_blank" class="btn btn-sm btn-success">
+            View Proof
+        </a>
+    @elseif($booking->payment_slip)
+        <a href="{{ asset('storage/' . $booking->payment_slip) }}" target="_blank" class="btn btn-sm btn-success">
+            View Proof
+        </a>
+    @else
+        <span class="text-muted">Not Uploaded</span>
+    @endif
+</td>
+            {{-- Payment Method --}}
+            <td>{{ ucfirst($booking->warehouse->preferred_payment_method ?? 'N/A') }}</td>
+
+            {{-- Payment Status --}}
             <td>
                 @if($booking->payment_status == 'paid')
                     <span class="badge bg-success">Received</span>
+                @elseif($booking->payment_status == 'released')
+                    <span class="badge bg-success">Released</span>
                 @elseif($booking->payment_status == 'unpaid' || $booking->payment_status == 'escrow')
                     <span class="badge bg-warning">Pending from Admin</span>
                 @else
                     <span class="badge bg-secondary">{{ ucfirst($booking->payment_status) }}</span>
                 @endif
             </td>
+
+            {{-- Actions --}}
             <td>
                 @if($booking->payment_status != 'paid')
                     @if($booking->warehouse->preferred_payment_method == 'stripe')
                         <form method="POST" action="{{ route('owner.payments.stripe', $booking->id) }}">
                             @csrf
-                            <button class="btn btn-sm btn-primary">Pay via Stripe</button>
+                            <button class="btn btn-sm btn-primary mt-1">Pay via Stripe</button>
                         </form>
                     @elseif($booking->warehouse->preferred_payment_method == 'jazzcash')
                         <form method="POST" action="{{ route('owner.payments.jazzcash', $booking->id) }}">
                             @csrf
-                            <button class="btn btn-sm btn-info">Pay via JazzCash</button>
+                            <button class="btn btn-sm btn-info mt-1">Pay via JazzCash</button>
                         </form>
                     @endif
                 @else

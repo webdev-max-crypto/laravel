@@ -35,6 +35,7 @@
                         <th>Owner</th>
                         <th>Total Price</th>
                         <th>Owner Amount</th>
+                        <th>Payment Proof</th>
                         <th>Status</th>
                         <th>Payment Status</th>
                         <th width="200">Action</th>
@@ -57,6 +58,16 @@
 
                         {{-- Owner Amount --}}
                         <td>Rs. {{ number_format($booking->owner_amount ?? $booking->total_price ?? 0, 2) }}</td>
+                        {{-- Payment Proof --}}
+<td>
+    @if($booking->payment_slip)
+        <a href="{{ asset('storage/' . $booking->payment_slip) }}" target="_blank" class="btn btn-sm btn-success">
+            View Proof
+        </a>
+    @else
+        <span class="text-muted">Not Uploaded</span>
+    @endif
+</td>
 
                         {{-- Booking Status --}}
                         <td>

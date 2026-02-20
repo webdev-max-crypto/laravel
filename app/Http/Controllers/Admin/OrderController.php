@@ -54,6 +54,7 @@ class OrderController extends Controller
     if ($booking->payment_status !== 'paid') {
         return back()->with('error', 'Booking not eligible for release.');
     }
+    
 
     $owner = $booking->warehouse->owner;
     if (!$owner) {
