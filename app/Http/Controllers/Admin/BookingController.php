@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\Booking;
 use Stripe\Stripe;
 use Stripe\PaymentIntent;
+use App\Notifications\BookingNotification;
+use Stripe\Transfer;
+
 
 class BookingController extends Controller
 {

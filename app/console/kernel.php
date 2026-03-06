@@ -14,6 +14,8 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule)
     {
+
+    $schedule->command('remind:goods-confirm')->everyTwoDays();
         // 🔐 Fraud auto-check
         $schedule->command('fraud:auto-check')->daily();
 

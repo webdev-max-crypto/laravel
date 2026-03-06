@@ -50,5 +50,6 @@
 {{ $bookings->links() }}
 @else
 <p class="text-muted">No bookings found for this tab.</p>
+
 @endif
 @endsection

@@ -43,5 +43,13 @@
                 {{ __('Log in') }}
             </x-primary-button>
         </div>
+     <a href="/auth/google" style="display:inline-flex;align-items:center;gap:10px;
+padding:10px 18px;border:1px solid #ddd;border-radius:5px;text-decoration:none;color:black;background:white;">
+    
+    <img src="https://developers.google.com/identity/images/g-logo.png" width="20">
+
+    <span>Sign in with Google</span>
+
+</a>
     </form>
 </x-guest-layout>

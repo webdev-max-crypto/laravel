@@ -100,7 +100,7 @@
                 <option value="customer" {{ old('role') === 'customer' || old('role') === null ? 'selected' : '' }}>Customer</option>
             </select>
             <x-input-error :messages="$errors->get('role')" class="mt-2" />
-        </div>
+        </div><br>
 
         <!-- Submit -->
         <div class="flex items-center justify-end mt-4">
@@ -111,32 +111,41 @@
                 {{ __('Register') }}
             </x-primary-button>
         </div>
+        <div class="mt-4" id="googleSignup">
+    <a href="/auth/google" class="flex items-center justify-center gap-2 border rounded-md px-4 py-2 bg-white">
+        <img src="https://developers.google.com/identity/images/g-logo.png" width="20">
+        <span>Sign up with Google</span>
+    </a>
+</div>
     </form>
 
     <!-- SCRIPT: Role-based Field Toggle -->
     <script>
-        const roleSelect = document.getElementById('role');
-        const ownerFields = document.querySelectorAll('.owner-only');
-        const userPhone = document.querySelector('.user-phone');
-        const userProfile = document.querySelector('.user-profile');
+    const roleSelect = document.getElementById('role');
+    const ownerFields = document.querySelectorAll('.owner-only');
+    const userPhone = document.querySelector('.user-phone');
+    const userProfile = document.querySelector('.user-profile');
+    const googleSignup = document.getElementById('googleSignup');
 
-        function toggleFields() {
-            const role = roleSelect.value;
+    function toggleFields() {
+        const role = roleSelect.value;
 
-            // Show/hide owner fields
-            ownerFields.forEach(f => f.style.display = (role === 'owner') ? 'block' : 'none');
+        // Owner fields
+        ownerFields.forEach(f => f.style.display = (role === 'owner') ? 'block' : 'none');
 
-            // Hide phone & profile for admin
-            if(role === 'admin') {
-                userPhone.style.display = 'none';
-                userProfile.style.display = 'none';
-            } else {
-                userPhone.style.display = 'block';
-                userProfile.style.display = 'block';
-            }
+        // Admin hide phone/profile
+        if(role === 'admin') {
+            userPhone.style.display = 'none';
+            userProfile.style.display = 'none';
+            googleSignup.style.display = 'none'; // hide google signup
+        } else {
+            userPhone.style.display = 'block';
+            userProfile.style.display = 'block';
+            googleSignup.style.display = 'block'; // show for owner & customer
         }
+    }
 
-        roleSelect.addEventListener('change', toggleFields);
-        toggleFields();
-    </script>
+    roleSelect.addEventListener('change', toggleFields);
+    toggleFields();
+</script>
 </x-guest-layout>

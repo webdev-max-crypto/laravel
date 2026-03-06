@@ -16,6 +16,7 @@ use Stripe\Account;
 use Stripe\AccountLink;
 use Stripe\Checkout\Session;
 use Stripe\Transfer;
+use App\Http\Controllers\StripeWebhookController;
 
 // -------------------------------
 // ADMIN CONTROLLERS
@@ -44,6 +45,7 @@ use App\Http\Controllers\Owner\WarehouseController as OwnerWarehouseController;
 use App\Http\Controllers\Owner\OwnerBookingController;
 use App\Http\Controllers\Owner\NotificationController as OwnerNotificationController;
 use App\Http\Controllers\PaymentController; // Owner payments
+use App\Http\Controllers\Owner\StripeConnectController;
 
 // -------------------------------
 // CUSTOMER CONTROLLERS
@@ -55,6 +57,19 @@ use App\Http\Controllers\Customer\NotificationController as CustomerNotification
 use App\Http\Controllers\Customer\ReportController as CustomerReportController;
 use App\Http\Controllers\Customer\CustomerHistoryController;
 use App\Http\Controllers\Customer\CustomerOrderController;
+
+
+
+
+use App\Http\Controllers\Auth\GoogleController;
+
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('google.login');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
+
+
+
+Route::post('/stripe/webhook', [StripeWebhookController::class, 'handle']);
 
 // -------------------------------
 // GENERAL ROUTES
@@ -242,6 +257,9 @@ Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group
     Route::post('/payments/stripe/{bookingId}', [PaymentController::class, 'ownerStripePay'])->name('payments.stripe');
     Route::post('/payments/jazzcash/{bookingId}', [PaymentController::class, 'ownerJazzCashPay'])->name('payments.jazzcash');
 
+     Route::get('/stripe/connect', [StripeConnectController::class, 'connect'])->name('stripe.connect');
+    Route::get('/stripe/callback', [StripeConnectController::class, 'callback'])->name('stripe.callback');
+    Route::get('/stripe/status', [StripeConnectController::class, 'status'])->name('stripe.status');
     // **Owner Balance Page**
     Route::get('/balance', [PaymentController::class, 'ownerBalance'])->name('balances');
 
@@ -306,6 +324,8 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
      // Release payment page
     Route::get('bookings/{id}/release', [AdminOrderController::class, 'releasePage'])
         ->name('bookings.releasePage');
+        Route::post('/bookings/{id}/release', [AdminBookingController::class,'release'])
+        ->name('bookings.release');
         // Confirm release (POST)
 
 Route::post('bookings/{id}/release', [AdminOrderController::class, 'confirmRelease'])
@@ -313,7 +333,8 @@ Route::post('bookings/{id}/release', [AdminOrderController::class, 'confirmRelea
 
     // Payments & Escrow
     Route::get('/payments/escrow', [AdminPaymentController::class,'escrow'])->name('payments.escrow');
-
+Route::post('/payments/{id}/release', [PaymentController::class, 'release'])->name('payments.release');
+    Route::post('/payments/{id}/refund', [PaymentController::class, 'refund'])->name('payments.refund');
     // Admin: All owners balances page
 Route::get('/balances', [AdminPaymentController::class, 'ownersBalance'])
     ->name('balances');
@@ -366,7 +387,8 @@ Route::middleware(['auth', 'role:customer'])
     Route::get('/bookings', [CustomerBookingController::class,'index'])->name('bookings');
     Route::post('/booking/{id}/qr', [CustomerBookingController::class,'generateQr'])->middleware('auth');
     Route::post('/booking/{id}/confirm-goods', [CustomerBookingController::class,'confirmGoods']);
-
+Route::post('/goods-confirm/{id}', [CustomerBookingController::class,'confirmGoods'])
+    ->name('goods.confirm');
     // Customer full history
     Route::get('/history', [CustomerHistoryController::class,'index'])->name('history');
 
@@ -387,6 +409,10 @@ Route::middleware(['auth', 'role:customer'])
     Route::get('/payment/instructions/{orderId}', [CustomerOrderController::class, 'paymentInstructions'])->name('customer.payment.instructions');
     Route::get('customer/booking/{id}/invoice', [App\Http\Controllers\Customer\BookingController::class, 'invoice'])
     ->name('customer.booking.invoice');
+    Route::get('/checkout/{warehouse}', [BookingController::class, 'checkout'])->name('checkout');
+    Route::post('/booking/payment-intent', [BookingController::class, 'createPaymentIntent'])->name('payment.intent');
+    Route::post('/booking/{id}/confirm-goods', [BookingController::class, 'confirmGoodsSafe'])->name('confirm.goods');
+
 
     
     Route::get('/order/status/{orderId}', [CustomerOrderController::class, 'orderStatus'])->name('customer.order.status');

@@ -27,6 +27,7 @@ class User extends Authenticatable
     'cnic_back',
     'is_verified',
     'agreement_accepted',
+    'stripe_account_id', 'stripe_account_status'
     ];
 
     /**

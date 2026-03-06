@@ -120,8 +120,14 @@
                                    Release to Owner
                                 </a>
                             @elseif($booking->payment_status === 'released')
-                                <span class="text-success fw-bold">✔ Released</span>
-                            @endif
+
+        <span class="text-success fw-bold">✔ Payment Released</span>
+
+    @elseif($booking->payment_status === 'paid' && $booking->goods_confirmed == 0)
+
+        <span class="text-muted">Waiting for Customer Confirmation</span>
+
+    @endif
                         </td>
                     </tr>
 
