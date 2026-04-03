@@ -2,37 +2,54 @@
 
 namespace App\Http\Controllers\Customer;
 
-use App\Http\Controllers\Controller;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Http\Request;
-use App\Models\Warehouse;
-use App\Models\Report;
+use App\Http\Controllers\Controller;
+use App\Notifications\ReportSubmitted;
 
 class ReportController extends Controller
 {
-    // Show form to create a report for a warehouse
-    public function create($id)
+
+    // 1️⃣ Show the report form
+    public function create($warehouseId)
     {
-        $warehouse = Warehouse::findOrFail($id);
-        return view('customer.report.create', compact('warehouse'));
+        return view('customer.warehouses.report', [
+            'warehouseId' => $warehouseId
+        ]);
     }
 
-    // Store the report
-    public function store(Request $request, $id)
+    public function store(Request $request, $warehouseId)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'required|string',
+        // 1️⃣ Save the report
+        $report = auth()->user()->reports()->create([
+            'warehouse_id' => $warehouseId,
+            'message'      => $request->message,
+            'status'       => 'pending',
         ]);
 
-        $warehouse = Warehouse::findOrFail($id);
+        // 2️⃣ Customer notification (optional, using built-in notify)
+        auth()->user()->notify(
+            new ReportSubmitted("Your report has been submitted successfully")
+        );
 
-        $report = new Report();
-        $report->warehouse_id = $warehouse->id;
-        $report->customer_id = auth()->id();
-        $report->title = $request->title;
-        $report->description = $request->description;
-        $report->save();
+        // 3️⃣ Admin notifications (custom insert)
+        $admins = User::where('role', 'admin')->get();
 
-        return redirect()->route('customer.history')->with('success', 'Report submitted successfully!');
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'type'    => 'report_submitted',
+                'message' => "New report submitted by " . auth()->user()->name,
+                'data'    => json_encode([
+                    'report_id' => $report->id,
+                    'user_id'   => auth()->user()->id
+                ]),
+                'is_read' => 0
+                // DO NOT assign 'id' manually
+            ]);
+        }
+
+        return back()->with('success', 'Report submitted successfully!');
     }
 }

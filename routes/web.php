@@ -263,6 +263,8 @@ Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group
     // **Owner Balance Page**
     Route::get('/balance', [PaymentController::class, 'ownerBalance'])->name('balances');
 
+    Route::get('/owner/stripe/connect', [OwnerController::class, 'connectStripe'])
+    ->name('owner.stripe.connect');
     // Help & Support
     Route::get('/help', fn() => view('owner.help.index'))->name('help');
     Route::post('/help', fn(\Illuminate\Http\Request $request) => redirect()->back()->with('success', 'Your message has been sent!'));
@@ -403,7 +405,11 @@ Route::post('/goods-confirm/{id}', [CustomerBookingController::class,'confirmGoo
     Route::get('/warehouse/{id}/report', [CustomerReportController::class,'create'])->name('report.create');
     Route::post('/warehouse/{id}/report', [CustomerReportController::class,'store'])->name('report.store');
 
-    // Orders
+    Route::get('/warehouse/{id}/report', [CustomerReportController::class, 'create'])->name('warehouse.report.create');
+    Route::post('/warehouse/{id}/report', [CustomerReportController::class, 'store'])->name('warehouse.report.store');
+
+        Route::post('/warehouse/{warehouse}/report', [ReportController::class, 'store'])
+        ->name('report.store');
     Route::get('/checkout', [CustomerOrderController::class, 'checkout'])->name('customer.checkout');
     Route::post('/order/place', [CustomerOrderController::class, 'placeOrder'])->name('customer.order.place');
     Route::get('/payment/instructions/{orderId}', [CustomerOrderController::class, 'paymentInstructions'])->name('customer.payment.instructions');
@@ -423,3 +429,35 @@ Route::post('/goods-confirm/{id}', [CustomerBookingController::class,'confirmGoo
 // AUTH ROUTES
 // -------------------------------
 require __DIR__.'/auth.php';
+use App\Models\User; // or Owner model
+use Illuminate\Support\Facades\Log;
+
+Route::get('/check-stripe-accounts', function () {
+    $owners = User::all(); // Change to your Owner model if different
+    $invalidOwners = [];
+
+    foreach ($owners as $owner) {
+        $stripeId = $owner->stripe_account_id; // your column name
+        if (!$stripeId || !str_starts_with($stripeId, 'acct_')) {
+            $invalidOwners[] = [
+                'id' => $owner->id,
+                'name' => $owner->name,
+                'stored_id' => $stripeId,
+            ];
+        }
+    }
+
+    if (count($invalidOwners) > 0) {
+        Log::info('Invalid Stripe IDs found:', $invalidOwners);
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Some owners have invalid Stripe account IDs.',
+            'invalid_owners' => $invalidOwners
+        ]);
+    }
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'All owners have valid Stripe account IDs.'
+    ]);
+});

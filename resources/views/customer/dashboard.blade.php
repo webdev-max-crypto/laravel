@@ -200,7 +200,14 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())->lates
                     </span>
                 </p>
                 <a href="{{ route('customer.booking.create', $warehouse->id) }}" class="btn-book">Book Area</a>
-                <a href="#" class="btn-report">Report</a>
+                <form action="{{ route('customer.report.store', $warehouse->id) }}" method="POST" style="margin-top:10px;">
+    @csrf
+<input type="hidden" name="booking_id" value="{{ $bookingId ?? '' }}">    
+    <textarea name="message" placeholder="Write report..." required
+        style="width:100%;margin-bottom:5px;"></textarea>
+    
+    <button type="submit" class="btn-report">Submit Report</button>
+</form>
             </div>
         @endforeach
     </div>

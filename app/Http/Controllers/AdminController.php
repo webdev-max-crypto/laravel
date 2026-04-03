@@ -8,6 +8,7 @@ use App\Models\Booking;
 use App\Models\Order;
 use App\Models\Payment;
 use App\Models\Warehouse;
+use App\Models\FraudReport;
 use Illuminate\Support\Facades\Hash;
 use Stripe\Stripe;
 use Stripe\Transfer;
@@ -194,4 +195,9 @@ class AdminController extends Controller
         }
         return null;
     }
+    public function reports()
+{
+    $reports = FraudReport::with('user', 'warehouse')->latest()->get();
+    return view('admin.fraud.index', compact('reports'));
+}
 }

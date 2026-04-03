@@ -2,24 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class FraudReport extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
-        'booking_id',
-        'reported_by',
+        'user_id',
+        'warehouse_id',
         'message',
-        'status'
+        'status',
     ];
 
-    public function booking()
+    public function user()
     {
-        return $this->belongsTo(Booking::class);
+        return $this->belongsTo(User::class);
     }
 
-    public function reporter()
+    public function warehouse()
     {
-        return $this->belongsTo(User::class, 'reported_by');
+        return $this->belongsTo(\App\Models\Warehouse::class);
     }
 }

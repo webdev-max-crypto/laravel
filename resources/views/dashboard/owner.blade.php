@@ -30,6 +30,7 @@
         </div>
     </div>
 
+    
     <!-- Stats -->
     <div class="row">
 
