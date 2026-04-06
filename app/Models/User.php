@@ -43,10 +43,10 @@ class User extends Authenticatable
     public function warehouses() { return $this->hasMany(Warehouse::class, 'owner_id'); }
     public function bookings() { return $this->hasMany(Booking::class, 'customer_id'); }
     public function reviews() { return $this->hasMany(Review::class, 'user_id'); }
- public function reports()
-    {
-        return $this->hasMany(FraudReport::class);
-    }
+public function reports()
+{
+    return $this->hasMany(FraudReport::class);
+}
 
     // --------------------------
     // Notifications fix for 'is_read'

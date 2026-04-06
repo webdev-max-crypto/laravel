@@ -17,12 +17,12 @@ class FraudReport extends Model
     ];
 
     public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
+{
+    return $this->belongsTo(User::class);
+}
 
-    public function warehouse()
-    {
-        return $this->belongsTo(\App\Models\Warehouse::class);
-    }
+public function warehouse()
+{
+    return $this->belongsTo(Warehouse::class);
+}
 }

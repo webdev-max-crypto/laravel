@@ -322,8 +322,12 @@ Route::prefix('admin')->middleware(['auth','role:admin'])->name('admin.')->group
     ->name('admin.bookings.release-payment');
     
 
+// Block warehouse
+    Route::post('/warehouse/{id}/block', [App\Http\Controllers\Admin\ReportController::class, 'block'])->name('warehouse.block');
 
-     // Release payment page
+    // Delete warehouse
+    Route::delete('/warehouse/{id}', [App\Http\Controllers\Admin\ReportController::class, 'destroy'])->name('warehouse.delete');
+
     Route::get('bookings/{id}/release', [AdminOrderController::class, 'releasePage'])
         ->name('bookings.releasePage');
         Route::post('/bookings/{id}/release', [AdminBookingController::class,'release'])

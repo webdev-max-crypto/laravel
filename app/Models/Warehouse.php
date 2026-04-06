@@ -48,5 +48,9 @@ class Warehouse extends Model
         'inactive_reason' => null,
     ]);
 }
+public function reports()
+{
+    return $this->hasMany(FraudReport::class);
+}
 
 }

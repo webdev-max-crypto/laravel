@@ -8,12 +8,15 @@ use App\Models\Notification;
 use Illuminate\Http\Request;
 use App\Helpers\Notify;
 
+
 class FraudController extends Controller
 {
-    public function index(){
-        $reports = FraudReport::latest()->get();
-        return view('admin.fraud.index', compact('reports'));
-    }
+   public function index()
+{
+    $reports = FraudReport::with(['user', 'warehouse'])->latest()->get();
+
+    return view('admin.reports.index', compact('reports'));
+}
 
     public function resolve($id){
         $report = FraudReport::findOrFail($id);

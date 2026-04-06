@@ -14,7 +14,7 @@
             <thead class="table-dark">
                 <tr>
                     <th>ID</th>
-                    <th>Booking ID</th>
+                    <th>Warehouse</th>
                     <th>Reported By</th>
                     <th>Message</th>
                     <th>Status</th>
@@ -22,16 +22,18 @@
             </thead>
 
             <tbody>
-                @foreach($reports as $rep)
-                <tr>
-                    <td>{{ $rep->id }}</td>
-                    <td>{{ $rep->booking_id }}</td>
-                    <td>{{ $rep->booking->customer->name ?? 'N/A' }}</td>
-                    <td>{{ $rep->message }}</td>
-                    <td>
-                        <span class="badge bg-info">{{ $rep->status }}</span>
-                    </td>
-                </tr>
+                @foreach($reports as $report)
+                    <tr>
+                        <td>{{ $report->id }}</td>
+                        <td>{{ $report->warehouse->name }}</td>
+                        <td>{{ $report->user->name }}</td>
+                        <td>{{ $report->message }}</td>
+                        <td>
+                            <span class="badge bg-warning">
+                                {{ $report->status }}
+                            </span>
+                        </td>
+                    </tr>
                 @endforeach
             </tbody>
         </table>

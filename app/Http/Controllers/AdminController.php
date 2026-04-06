@@ -200,4 +200,10 @@ class AdminController extends Controller
     $reports = FraudReport::with('user', 'warehouse')->latest()->get();
     return view('admin.fraud.index', compact('reports'));
 }
+public function index()
+{
+    $reports = FraudReport::with(['user', 'warehouse'])->latest()->get();
+
+    return view('admin.reports.index', compact('reports'));
+}
 }
