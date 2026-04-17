@@ -31,7 +31,7 @@
 <th style="padding:10px;border:1px solid #ddd;">Warehouse</th>
 <th style="padding:10px;border:1px solid #ddd;">Total Price</th>
 <th style="padding:10px;border:1px solid #ddd;">Payment Status</th>
-<th style="padding:10px;border:1px solid #ddd;">QR Code</th>
+{{--<th style="padding:10px;border:1px solid #ddd;">QR Code</th>--}}
 <th style="padding:10px;border:1px solid #ddd;">Booking Status</th>
 <th style="padding:10px;border:1px solid #ddd;">Goods Confirm</th>
 </tr>
@@ -76,7 +76,7 @@ Please complete online payment to JazzCash:
 
 </td>
 
-<td style="padding:10px;border:1px solid #ddd;">
+{{--<td style="padding:10px;border:1px solid #ddd;">
 
 @if($b->qr_code)
 <img src="{{ asset('storage/' . $b->qr_code) }}" width="100">
@@ -84,7 +84,7 @@ Please complete online payment to JazzCash:
 -
 @endif
 
-</td>
+</td>--}}
 
 <td style="padding:10px;border:1px solid #ddd;">
 {{ ucfirst($b->status) }}

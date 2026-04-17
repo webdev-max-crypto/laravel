@@ -48,8 +48,7 @@
                 </div>
 
                 <div id="jazzcashInfo" style="display:none;margin-top:10px;padding:10px;background:#fef3c7;color:#92400e;border-radius:6px;">
-                    <strong>Pay via JazzCash:</strong> Send the total amount to <strong>03009650977</strong> (Admin).<br>
-                    Upload payment slip above to confirm.
+                    <strong>Pay via JazzCash:</strong> Send the total amount to <strong>03009650977</strong> and upload the payment slip above to complete the order.
                 </div>
             </div>
 
