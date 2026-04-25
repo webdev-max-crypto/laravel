@@ -1,55 +1,228 @@
-<x-guest-layout>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Login - Smart Warehouse</title>
 
-    <form method="POST" action="{{ route('login') }}">
-        @csrf
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('email')" class="mt-2" />
-        </div>
+<style>
+:root{
+  --ink:#0d1117;
+  --blue:#2563eb;
+  --blue2:#1d4ed8;
+  --bg:#f9fafb;
+  --border:#e4e9f0;
+  --slate:#64748b;
+}
 
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+}
 
-            <x-text-input id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
+/* CARD */
+.login-wrapper{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:40px;
+}
 
-            <x-input-error :messages="$errors->get('password')" class="mt-2" />
-        </div>
+.login-card{
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:28px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.05);
+}
 
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember_me" class="inline-flex items-center">
-                <input id="remember_me" type="checkbox" class="rounded dark:bg-gray-900 border-gray-300 dark:border-gray-700 text-indigo-600 shadow-sm focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:focus:ring-offset-gray-800" name="remember">
-                <span class="ms-2 text-sm text-gray-600 dark:text-gray-400">{{ __('Remember me') }}</span>
-            </label>
-        </div>
+.title{
+  font-size:1.4rem;
+  font-weight:800;
+  margin-bottom:5px;
+}
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('password.request') }}">
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
+.subtitle{
+  font-size:.85rem;
+  color:var(--slate);
+  margin-bottom:20px;
+}
 
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
-     <a href="/auth/google" style="display:inline-flex;align-items:center;gap:10px;
-padding:10px 18px;border:1px solid #ddd;border-radius:5px;text-decoration:none;color:black;background:white;">
-    
-    <img src="https://developers.google.com/identity/images/g-logo.png" width="20">
+label{
+  font-size:.8rem;
+  font-weight:600;
+}
 
-    <span>Sign in with Google</span>
+input[type="email"],
+input[type="password"]{
+  width:100%;
+  padding:10px 12px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  margin-top:6px;
+  margin-bottom:14px;
+  outline:none;
+}
 
+input:focus{
+  border-color:var(--blue);
+}
+
+/* BUTTON */
+button{
+  width:100%;
+  padding:12px;
+  background:var(--blue);
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+}
+
+button:hover{
+  background:var(--blue2);
+}
+
+/* LINKS */
+.links{
+  display:flex;
+  justify-content:space-between;
+  margin-top:15px;
+  font-size:.85rem;
+}
+
+.links a{
+  color:var(--blue);
+  text-decoration:none;
+  font-weight:600;
+}
+
+/* GOOGLE */
+.google-btn{
+  margin-top:15px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:10px;
+  border:1px solid var(--border);
+  border-radius:10px;
+  text-decoration:none;
+  color:#000;
+  background:#fff;
+}
+nav{
+  position:fixed;
+  top:0;left:0;right:0;
+  height:66px;
+  background:#fff;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 6%;
+  z-index:1000;
+}
+.logo-name{
+  font-weight:800;
+  color:var(--ink);
+  font-size:1.1rem;
+}
+.logo-name em{color:var(--blue);font-style:normal}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.logo-box{
+  width:38px;height:38px;
+  background:var(--blue);
+  border-radius:9px;
+  display:flex;align-items:center;justify-content:center;
+}
+.google-btn:hover{
+  background:#f9fafb;
+}
+
+</style>
+<body>
+<nav>
+  <a href="/" class="logo">
+    <div class="logo-box">
+      🏭
+    </div>
+    <span class="logo-name">Smart-Multiwarehouse <em>Storage</em></span>
+  </a>
+</nav>
+
+<div class="login-wrapper">
+
+<div class="login-card">
+
+<div class="title">Welcome Back</div>
+<div class="subtitle">Login to your Smart Warehouse account</div>
+
+<!-- Session Status -->
+<x-auth-session-status class="mb-4" :status="session('status')" />
+
+<form method="POST" action="{{ route('login') }}">
+@csrf
+
+<!-- Email -->
+<label>Email</label>
+<x-text-input id="email"
+    type="email"
+    name="email"
+    class="w-full"
+    :value="old('email')"
+    required autofocus />
+
+<x-input-error :messages="$errors->get('email')" class="mt-2" />
+
+<!-- Password -->
+<label>Password</label>
+<x-text-input id="password"
+    type="password"
+    name="password"
+    class="w-full"
+    required />
+
+<x-input-error :messages="$errors->get('password')" class="mt-2" />
+
+<!-- Remember -->
+<div style="margin-top:10px;">
+    <label style="font-size:.85rem;">
+        <input type="checkbox" name="remember">
+        Remember me
+    </label>
+</div>
+
+<!-- Button -->
+<button type="submit" style="margin-top:15px;">
+    Log in
+</button>
+
+<!-- Links -->
+<div class="links">
+@if (Route::has('password.request'))
+<a href="{{ route('password.request') }}">Forgot password?</a>
+@endif
+<a href="/register">Create account</a>
+</div>
+
+<!-- Google -->
+<a href="/auth/google" class="google-btn">
+<img src="https://developers.google.com/identity/images/g-logo.png" width="18">
+<span>Sign in with Google</span>
 </a>
-    </form>
-</x-guest-layout>
+
+</form>
+
+</div>
+
+</div>
+

@@ -43,8 +43,17 @@ class CustomerBookingController extends Controller
             'months'       => 'required|integer|min:1',
             'items_detail' => 'nullable|string',
             'total_price'  => 'required|numeric',
+             'delivery_option' => 'required|string', 
         ]);
 
+          $baseTotal = $data['total_price'];
+
+        // ✅ DELIVERY LOGIC
+        $delivery  = $data['delivery_option'];
+        $riderFee  = ($delivery === 'rider') ? 200 : 0;
+
+        // ✅ FINAL TOTAL
+        $finalTotal = $baseTotal + $riderFee;
         $adminCommission = $data['total_price'] * 0.10;
         $ownerAmount     = $data['total_price'] - $adminCommission;
 
@@ -64,6 +73,10 @@ class CustomerBookingController extends Controller
             'goods_confirmed'  => 0,
             'storage_confirmed'=> 0,
             'is_abandoned'     => 0,
+             'delivery_option'  => $delivery,
+            'rider_fee'        => $riderFee,
+            'total_price'      => $finalTotal,
+             'delivery_option' => 'required|string',
         ]);
 
         Notification::create([

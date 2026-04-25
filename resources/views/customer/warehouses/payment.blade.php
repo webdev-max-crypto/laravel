@@ -1,12 +1,31 @@
 @extends('layouts.customer')
 
 @section('content')
+<div style="background:#f9fafb;padding:15px;border-radius:8px;margin-bottom:15px;">
+    <h3>Final Payable Amount</h3>
+    <h2 style="color:#16a34a;">Rs {{ number_format($booking->total_price) }}</h2>
+</div>
 <div style="max-width:760px;margin:auto;padding:25px;">
     <div style="background:white;padding:30px;border-radius:14px;
         box-shadow:0 6px 18px rgba(0,0,0,0.12);">
 
         <h2>Payment for Warehouse: {{ $booking->warehouse->name }}</h2>
-        <p>Total Amount: Rs {{ number_format($booking->total_price) }}</p>
+        <p>Base Amount: Rs {{ number_format($booking->total_price - $booking->rider_fee) }}</p>
+
+@if($booking->delivery_option == 'rider')
+    <p style="color:#f59e0b;">
+        Rider Fee: Rs {{ number_format($booking->rider_fee) }}
+    </p>
+@endif
+
+<hr>
+
+<h3 style="color:#16a34a;">
+    Final Total: Rs {{ number_format($booking->total_price) }}
+</h3>
+        @if($booking->delivery_option == 'rider')
+    <p>Rider Fee: Rs {{ $booking->rider_fee }}</p>
+@endif
 
         @if(session('success'))
             <div style="background:#d1fae5;padding:10px;margin-bottom:15px;color:#065f46;">

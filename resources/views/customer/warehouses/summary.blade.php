@@ -53,24 +53,48 @@
         @endif
 
         <hr style="margin:25px 0;">
+        
 
         <!-- TOTAL -->
-        <div style="display:flex;justify-content:space-between;
-        align-items:center;margin-bottom:20px;">
-            <h3 style="margin:0;color:#1f2937;">Total Price</h3>
-            <h3 style="margin:0;color:#16a34a;">
-                Rs {{ number_format($total) }}
-            </h3>
-        </div>
+         <hr>
+
+<label><strong>Delivery Option:</strong></label>
+<select id="delivery_option" name="delivery_option" onchange="updateTotal()" required>
+    <option value="self">I will pick goods myself</option>
+    <option value="rider">Need Rider (Rs 200)</option>
+</select>
+
+<input type="hidden" name="delivery_option" id="deliveryInput" value="self">
+        <!-- TOTAL -->
+<!-- TOTAL -->
+<div style="display:flex;justify-content:space-between;">
+    <h3>Base Total</h3>
+    <h3>Rs {{ number_format($total) }}</h3>
+</div>
+
+<div style="display:flex;justify-content:space-between;">
+    <h3>Rider Fee</h3>
+    <h3>Rs <span id="riderFee">0</span></h3>
+</div>
+
+<div style="display:flex;justify-content:space-between;">
+    <h2>Final Total</h2>
+    <h2>Rs <span id="finalTotal">{{ number_format($total) }}</span></h2>
+</div>
+<h3>Total Price: {{ $total }}</h3>
+
+
 
         <!-- ✅ CONFIRM FORM -->
       <form action="{{ route('customer.warehouses.agreement', $warehouse->id) }}" method="POST">
     @csrf
-    <input type="hidden" name="area" value="{{ $data['area'] }}">
-    <input type="hidden" name="items" value="{{ $data['items'] }}">
-    <input type="hidden" name="months" value="{{ $data['months'] }}">
-    <input type="hidden" name="items_detail" value="{{ $data['items_detail'] ?? '' }}">
-    <input type="hidden" name="total_price" value="{{ $total }}">
+
+    @foreach($data as $key => $value)
+        <input type="hidden" name="{{ $key }}" value="{{ $value }}">
+    @endforeach
+
+    <input type="hidden" name="delivery_option" id="deliveryInput" value="self">
+    <input type="hidden" name="total_price" id="finalTotalInput" value="{{ $total }}">
 
     <button type="submit"
             style="width:100%;padding:14px;background:#16a34a;color:white;border:none;border-radius:10px;font-size:17px;font-weight:600;cursor:pointer;">
@@ -83,4 +107,25 @@
 
     </div>
 </div>
+<script>
+
+const baseTotal = {{ $total }};
+const riderCharge = 200;
+
+function updateTotal(){
+    let delivery = document.getElementById('delivery_option').value;
+
+    document.getElementById('deliveryInput').value = delivery;
+
+    let rider = (delivery === 'rider') ? riderCharge : 0;
+    let final = baseTotal + rider;
+
+    document.getElementById('riderFee').innerText = rider;
+    document.getElementById('finalTotal').innerText = final;
+
+    // 🔥 THIS LINE IS KEY
+    document.getElementById('finalTotalInput').value = final;
+}
+</script>
+
 @endsection

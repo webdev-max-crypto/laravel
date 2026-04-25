@@ -1,4 +1,4 @@
-@extends('layouts.customer')
+@extends('customer.layouts.app')
 
 @section('content')
 @foreach($bookings as $b)

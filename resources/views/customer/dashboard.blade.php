@@ -118,6 +118,30 @@
             gap: 20px;
             margin-top: 20px;
         }
+        
+.toast {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #22c55e; /* green */
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    z-index: 9999;
+    font-size: 14px;
+    animation: slideIn 0.5s ease, fadeOut 0.5s ease 3s forwards;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; transform: translateX(100%); }
+}
+
         .warehouse-card {
             background: white;
             padding: 20px;
@@ -211,6 +235,11 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())->lates
             </div>
         @endforeach
     </div>
+    @if(session('success'))
+    <div id="toast" class="toast">
+        {{ session('success') }}
+    </div>
+@endif
 </div>
 
 <script>
@@ -236,6 +265,14 @@ $notifications = \App\Models\Notification::where('user_id', auth()->id())->lates
             contentWrapper.scrollTo({ top: 50, behavior: 'smooth' });
         }
     });
+</script>
+<script>
+setTimeout(() => {
+    let toast = document.getElementById("toast");
+    if (toast) {
+        toast.remove();
+    }
+}, 3500);
 </script>
 
 </body>

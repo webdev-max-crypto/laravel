@@ -53,7 +53,8 @@ class Kernel extends HttpKernel
         'check.qr' => \App\Http\Middleware\CheckQrAccess::class,
         'qr.access' => \App\Http\Middleware\VerifyQrAccess::class,
 
-        // ✅ Your role middleware must be added here
+'owner.agreement.check' => \App\Http\Middleware\CheckOwnerAgreement::class,       
+ // ✅ Your role middleware must be added here
         'role' => \App\Http\Middleware\RoleMiddleware::class,
     ];
 }

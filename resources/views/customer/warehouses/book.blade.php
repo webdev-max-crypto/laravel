@@ -1,6 +1,8 @@
 @extends('layouts.customer')
 
 @section('content')
+
+
 <div class="content" style="max-width:760px;margin:auto;padding:25px;">
 
     <!-- Back Button -->
@@ -64,14 +66,21 @@
 
             <div style="margin-bottom:15px;">
                 <label style="font-weight:600;">Area Required (sq units)</label>
-                <input type="number" name="area" required
-                       style="width:100%;padding:10px;
-                       border-radius:6px;border:1px solid #ccc;">
+               <input 
+    type="number" 
+    name="area" 
+    required
+    min="1" 
+    step="1"
+    oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+    style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;">
             </div>
 
             <div style="margin-bottom:15px;">
                 <label style="font-weight:600;">Number of Items</label>
-                <input type="number" name="items" required
+                <input type="number" name="items" required min="1" step="1"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
+
                        style="width:100%;padding:10px;
                        border-radius:6px;border:1px solid #ccc;">
             </div>
@@ -81,15 +90,19 @@
                 <label style="font-weight:600;">
                     Items / Boxes Details
                 </label>
-                <textarea name="items_detail" rows="4"
-                          placeholder="Example: 10 cartons, fragile items, electronics, pallets etc."
-                          style="width:100%;padding:10px;
-                          border-radius:6px;border:1px solid #ccc;"></textarea>
+                <textarea 
+    name="items_detail" 
+    rows="4"
+    placeholder="Example: cartons fragile items electronics pallets"
+    oninput="this.value = this.value.replace(/[^a-zA-Z\s]/g, '')"
+    style="width:100%; padding:10px; border-radius:6px; border:1px solid #ccc;">
+</textarea>
             </div>
 
             <div style="margin-bottom:20px;">
                 <label style="font-weight:600;">Storage Duration (Months)</label>
-                <input type="number" name="months" required
+                <input type="number" name="months" required min="1" step="1"
+                       oninput="this.value = this.value.replace(/[^0-9]/g, '')"
                        style="width:100%;padding:10px;
                        border-radius:6px;border:1px solid #ccc;">
             </div>

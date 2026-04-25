@@ -35,24 +35,42 @@ class WarehouseController extends Controller
     // Store new warehouse
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'name'=>'required|string|max:255',
-            'location'=>'required|string|max:255',
-            'size'=>'nullable|string|max:255',
-            'contact'=>'required|string|max:20',
-            'description'=>'nullable|string|max:255',
-            'address'=>'required|string',
-            'total_space'=>'required|integer|min:1',
-            'available_space'=>'required|integer|min:0',
-            'price_per_month'=>'required|numeric|min:0', // PKR price
+       $data = $request->validate([
+    'name' => ['required','regex:/^[A-Za-z\s]+$/','max:255'],
+    'location'=>'required|string|max:255',
 
-            'preferred_payment_method'=>'required|in:stripe,jazzcash',
-            'jazzcash_number'=>'nullable|string|max:20',
-            'stripe_account_id'=>'nullable|string|max:255',
+    'size' => ['nullable','regex:/^[0-9]+$/'],
 
-            'image'=>'required|image|mimes:jpg,jpeg,png|max:5120',
-            'property_doc'=>'nullable|mimes:jpg,jpeg,png,pdf|max:8192',
-        ]);
+    'contact'=>'required|string|max:20',
+
+    'description' => ['nullable','regex:/^[A-Za-z\s]+$/'],
+
+    'address' => ['required','regex:/^[A-Za-z0-9\s#,-]+$/'],
+
+    'total_space'=>'required|integer|min:1',
+    'available_space'=>'required|integer|min:0',
+
+    'price_per_month' => ['required','numeric','min:2500','max:5000'],
+
+    'preferred_payment_method'=>'required|in:stripe,jazzcash',
+
+    'jazzcash_number' => ['nullable','regex:/^[0-9]+$/'],
+
+    'stripe_account_id' => ['nullable','regex:/^[A-Za-z0-9_]+$/'],
+
+    'image'=>'required|image|mimes:jpg,jpeg,png|max:5120',
+    'property_doc'=>'nullable|mimes:jpg,jpeg,png,pdf|max:8192',
+
+],[
+    // Custom Error Messages
+    'name.regex' => 'Warehouse name must contain letters only.',
+    'size.regex' => 'Size must be numbers only.',
+    'description.regex' => 'Description must contain letters only.',
+    'address.regex' => 'Address can include letters, numbers and # only.',
+    'price_per_month.min' => 'Price must be a positive number.',
+    'jazzcash_number.regex' => 'JazzCash number must contain numbers only.',
+    'stripe_account_id.regex' => 'Stripe ID must contain letters and numbers only.',
+]);
 
         if($request->preferred_payment_method == 'jazzcash' && empty($request->jazzcash_number)){
             return back()->withErrors(['jazzcash_number'=>'JazzCash number is required'])->withInput();
@@ -109,22 +127,31 @@ class WarehouseController extends Controller
         $warehouse = Warehouse::where('owner_id',Auth::id())->where('id',$id)->firstOrFail();
 
         $data = $request->validate([
-            'name'=>'required|string|max:255',
-            'location'=>'required|string|max:255',
-            'size'=>'nullable|string|max:255',
-            'contact'=>'required|string|max:20',
-            'description'=>'nullable|string|max:255',
-            'address'=>'required|string',
-            'total_space'=>'required|integer|min:1',
-            'available_space'=>'required|integer|min:0',
-            'price_per_month'=>'required|numeric|min:0', // PKR price
+             'name' => ['required','regex:/^[A-Za-z\s]+$/','max:255'],
+    'location'=>'required|string|max:255',
 
-            'preferred_payment_method'=>'required|in:stripe,jazzcash',
-            'jazzcash_number'=>'nullable|string|max:20',
-            'stripe_account_id'=>'nullable|string|max:255',
+    'size' => ['nullable','regex:/^[0-9]+$/'],
 
-            'image'=>'nullable|image|mimes:jpg,jpeg,png|max:5120',
-            'property_doc'=>'nullable|mimes:jpg,jpeg,png,pdf|max:8192',
+    'contact'=>'required|string|max:20',
+
+    'description' => ['nullable','regex:/^[A-Za-z\s]+$/'],
+
+    'address' => ['required','regex:/^[A-Za-z0-9\s#,-]+$/'],
+
+    'total_space'=>'required|integer|min:1',
+    'available_space'=>'required|integer|min:0',
+
+    'price_per_month' => ['required','numeric','min:2500','max:5000'],
+
+    'preferred_payment_method'=>'required|in:stripe,jazzcash',
+
+    'jazzcash_number' => ['nullable','regex:/^[0-9]+$/'],
+
+    'stripe_account_id' => ['nullable','regex:/^[A-Za-z0-9_]+$/'],
+
+    'image'=>'required|image|mimes:jpg,jpeg,png|max:5120',
+    'property_doc'=>'nullable|mimes:jpg,jpeg,png,pdf|max:8192',
+
         ]);
 
         if($request->preferred_payment_method == 'jazzcash' && empty($request->jazzcash_number)){

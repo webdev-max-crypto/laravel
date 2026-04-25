@@ -17,7 +17,9 @@ class User extends Authenticatable
         'name', 'email', 'password', 'role', 'phone',
         'profile_photo', 'cnic', 'property_document',
         'cnic_front', 'cnic_back', 'is_verified',
-        'agreement_accepted', 'stripe_account_id', 'stripe_account_status'
+        'agreement_accepted', 'stripe_account_id', 'stripe_account_status','cnic',
+    'country',
+    'city'
     ];
 
     protected $hidden = [

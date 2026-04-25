@@ -218,13 +218,23 @@ Route::middleware('auth')->group(function () {
 /// -------------------------------
 // OWNER ROUTES
 // -------------------------------
-Route::prefix('owner')->middleware(['auth','role:owner'])->name('owner.')->group(function () {
+Route::prefix('owner')
+->middleware(['auth','role:owner'])
+->name('owner.')
+->group(function () {
+
+    Route::get('/dashboard', [DashboardController::class, 'owner'])->name('dashboard');
+
+    Route::get('/agreement', [DashboardController::class, 'agreement'])->name('agreement');
+
+    Route::post('/agreement/accept', [DashboardController::class, 'acceptAgreement'])->name('agreement.accept');
+
+    Route::get('/waiting', fn() => view('owner.waiting'))->name('waiting');
 
     // Dashboard & Agreement
-    Route::get('/dashboard', [DashboardController::class, 'owner'])->name('dashboard');
-    Route::get('/agreement', [DashboardController::class, 'agreement'])->name('agreement');
-    Route::post('/agreement/accept', [DashboardController::class, 'acceptAgreement'])->name('agreement.accept');
-    Route::get('/waiting', fn() => view('owner.waiting'))->name('waiting');
+    
+    
+    
 
     // Notifications
     Route::get('/notifications', [OwnerNotificationController::class,'index'])->name('notifications.index');
@@ -385,6 +395,7 @@ Route::middleware(['auth', 'role:customer'])
     Route::post('{id}/agreement', [CustomerWarehouseController::class,'agreement'])->name('warehouses.agreement');
     Route::post('{id}/final-confirm', [CustomerWarehouseController::class,'finalConfirm'])->name('warehouses.finalConfirm');
 
+    
     // Payment routes
     Route::get('/payment/{booking}', [CustomerWarehouseController::class,'payment'])->name('payment');
     Route::post('/payment/{booking}', [CustomerWarehouseController::class,'paymentStore'])->name('payment.store');

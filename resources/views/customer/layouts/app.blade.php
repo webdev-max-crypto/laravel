@@ -121,6 +121,9 @@
                     📜 History
                 </a>
             </li>
+   
+   
+            
 
             <li>
                 <a href="{{ route('customer.support') }}"
@@ -128,6 +131,7 @@
                     🆘 Help & Support
                 </a>
             </li>
+            
 
             <li>
                 <a href="{{ route('logout') }}"

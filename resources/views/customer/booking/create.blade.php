@@ -1,4 +1,4 @@
-@extends('layouts.customer')
+@extends('customer.layouts.app')
 
 @section('content')
 <div class="content" style="max-width:750px;margin:auto;padding:20px;">
