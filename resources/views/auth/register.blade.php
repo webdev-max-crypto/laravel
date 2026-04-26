@@ -10,6 +10,12 @@
         </ul>
     </div>
 @endif
+<!-- for error showing on top of page -->
+ @if(session('error'))
+    <div style="color:red; margin-bottom:10px;">
+        {{ session('error') }}
+    </div>
+@endif
 
 
 
@@ -23,6 +29,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
+  
 :root{
   --ink:#0d1117;
   --blue:#2563eb;
@@ -193,9 +200,10 @@ input:focus,select:focus{
     <div class="logo-box">
       🏭
     </div>
-    <span class="logo-name">Smart-Multiwarehouse <em>Storage</em></span>
+    <span class="logo-name">Smart-Multiwarehouse Self<em>-Storage</em></span>
   </a>
 </nav>
+
 
 <div class="wrapper">
 
@@ -221,13 +229,22 @@ input:focus,select:focus{
 <form method="POST" action="{{ route('admin.register') }}" enctype="multipart/form-data">
 @csrf
 
-<label>Name</label>
+<label>
+    Name 
+    <small style="color:#64748b; font-weight:500;">
+        (Only letters and spaces allowed)
+    </small>
+</label>
 <input type="text" name="name" pattern="[A-Za-z\s]+" value="{{ old('name') }}" required placeholder="Your full name">
-
 <label>Email</label>
 <input type="email" name="email" pattern="[a-zA-Z0-9._%+-]+@gmail\.com" required placeholder="Your email address">
 
-<label>Password</label>
+<label>
+    Password
+    <small style="color:#64748b; font-weight:500;">
+        (one big letter, one small letter, one number, one special char, min 8 chars)
+    </small>
+</label>
 <input type="password" name="password" required>
 
 <label>Confirm Password</label>

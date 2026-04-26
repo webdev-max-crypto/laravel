@@ -234,7 +234,7 @@
         <path d="M3 9.5h18" stroke="rgba(255,255,255,.5)" stroke-width="1.2"/>
       </svg>
     </div>
-    <span class="logo-name">Smart-Multiwarehouse Self<em>Storage</em></span>
+    <span class="logo-name">Smart-Multiwarehouse Self<em>-Storage</em></span>
   </a>
 
   <ul class="nav-links">
