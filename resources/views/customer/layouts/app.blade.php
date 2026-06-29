@@ -2,173 +2,399 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Customer Panel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --ink: #0d1117; --ink2: #1c2b3a;
+            --blue: #2563eb; --blue2: #1d4ed8;
+            --sky: #eff6ff; --sky2: #dbeafe;
+            --gold: #f59e0b; --emerald: #10b981;
+            --slate: #64748b; --border: #e4e9f0;
+            --bg: #f9fafb; --white: #ffffff;
+        }
+
         body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f3f4f6;
-            transition: margin-left 0.3s;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: var(--bg);
+            color: var(--ink);
+            min-height: 100vh;
         }
 
         /* ===== SIDEBAR ===== */
         .sidebar {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 240px;
+            top: 0; left: 0;
+            width: 250px;
             height: 100vh;
-            background: #111827;
-            color: #fff;
-            transition: transform 0.3s;
-        }
-
-        .sidebar.collapsed {
-            transform: translateX(-240px);
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            text-align: center;
-            background: #1f2937;
-            font-size: 18px;
-            font-weight: bold;
+            background: var(--ink2);
             display: flex;
-            justify-content: space-between;
+            flex-direction: column;
+            z-index: 100;
+            transition: transform 0.3s ease;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.12);
+        }
+        .sidebar.collapsed { transform: translateX(-250px); }
+
+        .sidebar-brand {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
             align-items: center;
+            gap: 10px;
         }
-
-        .menu-btn {
-            cursor: pointer;
-            font-size: 20px;
+        .brand-icon {
+            width: 36px; height: 36px;
+            background: var(--blue);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
         }
+        .brand-text { font-size: 14px; font-weight: 800; color: #fff; line-height: 1.2; }
+        .brand-sub  { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 2px; }
 
-        .sidebar-menu {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .sidebar-menu li {
-            border-bottom: 1px solid #1f2937;
-        }
-
-        .sidebar-menu li a {
-            display: block;
+        .sidebar-user {
             padding: 14px 20px;
-            color: #d1d5db;
-            text-decoration: none;
-            transition: 0.3s;
-        }
-
-        .sidebar-menu li a:hover,
-        .sidebar-menu li a.active {
-            background: #374151;
-            color: #fff;
-        }
-
-        /* ===== PAGE CONTENT ===== */
-        .content-wrapper {
-            margin-left: 240px;
-            padding: 25px;
-            transition: margin-left 0.3s;
-        }
-
-        .content-wrapper.expanded {
-            margin-left: 0;
-        }
-
-        /* HEADER */
-        .dashboard-header {
-            background: #1f2937;
-            color: white;
-            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            gap: 10px;
+        }
+        .user-avatar {
+            width: 36px; height: 36px;
+            background: var(--blue);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 14px; color: #fff;
+            flex-shrink: 0;
+        }
+        .user-name { font-size: 13px; font-weight: 700; color: #fff; }
+        .user-role { font-size: 11px; color: rgba(255,255,255,0.45); margin-top: 1px; }
+
+        .sidebar-nav { flex: 1; padding: 14px 10px; overflow-y: auto; }
+
+        .nav-label {
+            font-size: 10px; font-weight: 700;
+            letter-spacing: 1.5px; text-transform: uppercase;
+            color: rgba(255,255,255,0.3);
+            padding: 8px 10px 4px;
         }
 
-        .dashboard-header h2 {
-            margin: 0;
-            font-size: 20px;
+        .nav-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            color: rgba(255,255,255,0.65);
+            text-decoration: none;
+            font-size: 13.5px; font-weight: 600;
+            transition: all 0.18s;
+            margin-bottom: 2px;
+            position: relative;
         }
+        .nav-item:hover { background: rgba(255,255,255,0.07); color: #fff; }
+        .nav-item.active {
+            background: var(--blue);
+            color: #fff;
+            box-shadow: 0 2px 10px rgba(37,99,235,0.35);
+        }
+        .nav-icon { font-size: 16px; width: 20px; text-align: center; flex-shrink: 0; }
+
+        .nav-item.logout-btn { color: rgba(255,100,100,0.75); margin-top: 6px; }
+        .nav-item.logout-btn:hover { background: rgba(239,68,68,0.12); color: #f87171; }
+
+        .sidebar-footer {
+            padding: 14px 20px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+            font-size: 11px; color: rgba(255,255,255,0.25);
+            text-align: center;
+        }
+
+        /* ===== TOPBAR ===== */
+        .topbar {
+            position: fixed; top: 0;
+            left: 250px; right: 0;
+            height: 62px;
+            background: var(--white);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center;
+            justify-content: space-between;
+            padding: 0 28px;
+            z-index: 99;
+            transition: left 0.3s ease;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+        }
+        .topbar.expanded { left: 0; }
+
+        .topbar-left { display: flex; align-items: center; gap: 14px; }
+
+        .toggle-btn {
+            background: var(--sky);
+            border: 1px solid var(--sky2);
+            color: var(--blue);
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            cursor: pointer; font-size: 15px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.18s;
+        }
+        .toggle-btn:hover { background: var(--sky2); }
+
+        .page-title { font-size: 15px; font-weight: 700; color: var(--ink); }
+
+        .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+        .notif-wrapper { position: relative; }
+        .notif-btn {
+            background: var(--sky);
+            border: 1px solid var(--sky2);
+            color: var(--blue);
+            width: 34px; height: 34px;
+            border-radius: 8px;
+            cursor: pointer; font-size: 15px;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.18s; position: relative;
+        }
+        .notif-btn:hover { background: var(--sky2); }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #ef4444; color: #fff;
+            font-size: 10px; font-weight: 700;
+            width: 17px; height: 17px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid var(--white);
+        }
+
+        .notif-dropdown {
+            position: absolute; top: calc(100% + 8px); right: 0;
+            width: 310px;
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+            display: none; z-index: 200; overflow: hidden;
+        }
+        .notif-dropdown.open { display: block; }
+        .notif-header {
+            padding: 12px 16px; font-size: 13px; font-weight: 700;
+            color: var(--ink); border-bottom: 1px solid var(--border);
+        }
+        .notif-item {
+            padding: 11px 16px; border-bottom: 1px solid var(--border);
+            font-size: 13px; color: var(--slate); transition: background 0.15s;
+        }
+        .notif-item:hover { background: var(--sky); }
+        .notif-item.unread { color: var(--ink); font-weight: 600; }
+        .notif-item small { display: block; color: #94a3b8; font-size: 11px; margin-top: 2px; }
+        .notif-footer { padding: 10px 16px; text-align: center; }
+        .notif-footer a { color: var(--blue); font-size: 13px; font-weight: 600; text-decoration: none; }
+        .notif-footer a:hover { color: var(--blue2); }
+
+        .profile-chip {
+            display: flex; align-items: center; gap: 8px;
+            background: var(--sky); border: 1px solid var(--sky2);
+            border-radius: 20px; padding: 5px 14px 5px 6px;
+            text-decoration: none; transition: all 0.18s;
+        }
+        .profile-chip:hover { background: var(--sky2); }
+        .chip-avatar {
+            width: 26px; height: 26px; background: var(--blue);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 11px; font-weight: 800; color: #fff;
+        }
+        .chip-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+
+        /* ===== MAIN CONTENT ===== */
+        .main-content {
+            margin-left: 250px;
+            padding-top: 62px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+        .main-content.expanded { margin-left: 0; }
+        .content-inner { padding: 28px 32px; }
+
+        .flash-success {
+            background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.25);
+            color: #065f46; padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 18px; font-size: 14px; font-weight: 500;
+        }
+        .flash-error {
+            background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25);
+            color: #991b1b; padding: 12px 16px; border-radius: 8px;
+            margin-bottom: 18px; font-size: 14px; font-weight: 500;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed; top: 76px; right: 24px;
+            background: var(--emerald); color: #fff;
+            padding: 12px 20px; border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(16,185,129,0.3);
+            z-index: 9999; font-size: 14px; font-weight: 600;
+            animation: slideIn 0.35s ease, fadeOut 0.35s ease 3.2s forwards;
+        }
+        @keyframes slideIn { from { transform: translateX(110%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { transform: translateX(110%); opacity: 0; } }
+
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--sky2); border-radius: 10px; }
     </style>
 </head>
 <body>
-<div class="dashboard-wrapper">
 
-    <!-- SIDEBAR -->
-    <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <span>Customer</span>
-            <span class="menu-btn" id="toggleSidebarBtn">☰</span>
+@php
+    $unreadNotifications = \App\Models\Notification::where('user_id', auth()->id())->where('is_read', false)->count();
+    $notifications       = \App\Models\Notification::where('user_id', auth()->id())->latest()->take(5)->get();
+    $initials            = strtoupper(substr(auth()->user()->name, 0, 1));
+@endphp
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <div class="brand-icon">
+            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                <path d="M3 9.5L12 4l9 5.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" stroke="#fff" stroke-width="1.7" fill="rgba(255,255,255,.15)"/>
+                <rect x="9" y="13" width="6" height="8" rx="1" fill="#fff" opacity=".9"/>
+            </svg>
         </div>
-
-        <ul class="sidebar-menu">
-            <li>
-                <a href="{{ route('customer.dashboard') }}"
-                   class="{{ request()->routeIs('customer.dashboard') ? 'active' : '' }}">
-                    🏠 Dashboard
-                </a>
-            </li>
-
-            <li>
-                <a href="{{ route('customer.history') }}"
-                   class="{{ request()->routeIs('customer.history') ? 'active' : '' }}">
-                    📜 History
-                </a>
-            </li>
-   
-   
-            
-
-            <li>
-                <a href="{{ route('customer.support') }}"
-                   class="{{ request()->routeIs('customer.support') ? 'active' : '' }}">
-                    🆘 Help & Support
-                </a>
-            </li>
-            
-
-            <li>
-                <a href="{{ route('logout') }}"
-                   onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-                   class="logout">Logout</a>
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">
-                    @csrf
-                </form>
-            </li>
-        </ul>
+        <div>
+            <div class="brand-text">WarehouseHub</div>
+            <div class="brand-sub">Customer Portal</div>
+        </div>
     </div>
 
-    <!-- DASHBOARD HEADER -->
-    <div class="dashboard-header">
-        <h2>Customer Panel</h2>
-        <span class="menu-btn" id="headerToggleBtn">☰</span>
+    <div class="sidebar-user">
+        <div class="user-avatar">{{ $initials }}</div>
+        <div>
+            <div class="user-name">{{ auth()->user()->name }}</div>
+            <div class="user-role">Customer Account</div>
+        </div>
     </div>
 
-    <!-- PAGE CONTENT -->
-    <div class="content-wrapper" id="contentWrapper">
-        @yield('content')
-    </div>
+    <nav class="sidebar-nav">
+        <div class="nav-label">Main Menu</div>
 
+        <a href="{{ route('customer.dashboard') }}"
+           class="nav-item {{ request()->routeIs('customer.dashboard') ? 'active' : '' }}">
+            <span class="nav-icon">🏠</span> Dashboard
+        </a>
+
+        <a href="{{ route('customer.history') }}"
+           class="nav-item {{ request()->routeIs('customer.history') ? 'active' : '' }}">
+            <span class="nav-icon">📜</span> Booking History
+        </a>
+
+        <a href="{{ route('customer.notifications.index') }}"
+           class="nav-item {{ request()->routeIs('customer.notifications.*') ? 'active' : '' }}">
+            <span class="nav-icon">🔔</span> Notifications
+            @if($unreadNotifications)
+                <span style="margin-left:auto;background:#ef4444;color:#fff;border-radius:20px;padding:1px 8px;font-size:11px;font-weight:700;">{{ $unreadNotifications }}</span>
+            @endif
+        </a>
+
+        <div class="nav-label" style="margin-top:6px;">Support</div>
+
+        <a href="{{ route('customer.support') }}"
+           class="nav-item {{ request()->routeIs('customer.support') ? 'active' : '' }}">
+            <span class="nav-icon">🆘</span> Help & Support
+        </a>
+
+
+
+        <div class="nav-label" style="margin-top:6px;">Account</div>
+
+        <a href="{{ route('customer.edit') }}"
+           class="nav-item {{ request()->routeIs('customer.edit') ? 'active' : '' }}">
+            <span class="nav-icon">⚙️</span> Edit Profile
+        </a>
+
+        <a href="{{ route('logout') }}" class="nav-item logout-btn"
+           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+            <span class="nav-icon">🚪</span> Logout
+        </a>
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">@csrf</form>
+    </nav>
+
+    <div class="sidebar-footer">© {{ date('Y') }} WarehouseHub</div>
 </div>
 
+<!-- TOPBAR -->
+<div class="topbar" id="topbar">
+    <div class="topbar-left">
+        <button class="toggle-btn" id="toggleBtn">☰</button>
+        <span class="page-title">Customer Panel</span>
+    </div>
+    <div class="topbar-right">
+        <div class="notif-wrapper">
+            <button class="notif-btn" id="notifBtn">
+                🔔
+                @if($unreadNotifications)
+                    <span class="notif-badge">{{ $unreadNotifications }}</span>
+                @endif
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+                <div class="notif-header">🔔 Notifications</div>
+                @forelse($notifications as $notif)
+                    <div class="notif-item {{ $notif->is_read ? '' : 'unread' }}">
+                        {{ $notif->message }}
+                        <small>{{ $notif->created_at->diffForHumans() }}</small>
+                    </div>
+                @empty
+                    <div class="notif-item">No new notifications</div>
+                @endforelse
+                <div class="notif-footer">
+                    <a href="{{ route('customer.notifications.index') }}">View All →</a>
+                </div>
+            </div>
+        </div>
+
+        <a href="{{ route('customer.edit') }}" class="profile-chip">
+            <div class="chip-avatar">{{ $initials }}</div>
+            <span class="chip-name">{{ auth()->user()->name }}</span>
+        </a>
+    </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="main-content" id="mainContent">
+    <div class="content-inner">
+        @if(session('success'))
+            <div class="flash-success">✅ {{ session('success') }}</div>
+        @endif
+        @if(session('error'))
+            <div class="flash-error">❌ {{ session('error') }}</div>
+        @endif
+        @yield('content')
+    </div>
+</div>
+
+@if(session('success'))
+    <div class="toast" id="toast">✅ {{ session('success') }}</div>
+@endif
+
 <script>
-    const sidebar = document.getElementById('sidebar');
-    const contentWrapper = document.getElementById('contentWrapper');
-    const toggleBtns = [document.getElementById('toggleSidebarBtn'), document.getElementById('headerToggleBtn')];
+    const sidebar     = document.getElementById('sidebar');
+    const mainContent = document.getElementById('mainContent');
+    const topbar      = document.getElementById('topbar');
+    const toggleBtn   = document.getElementById('toggleBtn');
 
-    toggleBtns.forEach(btn => {
-        btn.addEventListener('click', () => {
-            sidebar.classList.toggle('collapsed');
-            contentWrapper.classList.toggle('expanded');
-        });
+    toggleBtn.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        mainContent.classList.toggle('expanded');
+        topbar.classList.toggle('expanded');
     });
-</script>
 
+    const notifBtn      = document.getElementById('notifBtn');
+    const notifDropdown = document.getElementById('notifDropdown');
+    notifBtn.addEventListener('click', (e) => { e.stopPropagation(); notifDropdown.classList.toggle('open'); });
+    document.addEventListener('click', () => notifDropdown.classList.remove('open'));
+
+    setTimeout(() => { const t = document.getElementById('toast'); if (t) t.remove(); }, 3600);
+
+
+</script>
 </body>
 </html>

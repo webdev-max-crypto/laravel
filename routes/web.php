@@ -47,6 +47,15 @@ use App\Http\Controllers\Owner\NotificationController as OwnerNotificationContro
 use App\Http\Controllers\PaymentController; // Owner payments
 use App\Http\Controllers\Owner\StripeConnectController;
 
+use App\Http\Controllers\OwnerController;
+use App\Http\Cpontrollers\Owner\DashboardController as OwnerDashboardController;
+use App\Http\Controllers\Owner\ReportController as OwnerReportController;
+use App\Http\Controllers\Owner\PaymentController as OwnerPaymentController;
+
+use App\Http\Controllers\Owner\ProfileController as OwnerProfileController;
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\ReportController;
+
 // -------------------------------
 // CUSTOMER CONTROLLERS
 // -------------------------------
@@ -194,6 +203,8 @@ Route::post('/api/sms/receive', [AdminController::class, 'receiveSMS']);
 // Dashboard redirect after login
 Route::middleware(['auth', 'verified'])->get('/dashboard', function () {
     $user = auth()->user();
+    // Regenerate session to prevent CSRF page expired when switching panels
+    request()->session()->regenerate();
     return match($user->role) {
         'admin' => redirect()->route('admin.dashboard'),
         'owner' => !$user->agreement_accepted
@@ -440,6 +451,44 @@ Route::post('/goods-confirm/{id}', [CustomerBookingController::class,'confirmGoo
 });
 
 
+// -------------------------------
+// REFUND ROUTES
+// -------------------------------
+use App\Http\Controllers\RefundController;
+
+Route::middleware('auth')->group(function () {
+    Route::post('/refund/request/{booking}', [RefundController::class, 'request'])->name('refund.request');
+    Route::get('/refund/my',                 [RefundController::class, 'myRefunds'])->name('refund.my');
+});
+
+Route::middleware(['auth','role:admin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/refunds',                   [RefundController::class, 'adminIndex'])->name('refunds.index');
+    Route::post('/refunds/{refund}/approve', [RefundController::class, 'approve'])->name('refunds.approve');
+    Route::post('/refunds/{refund}/reject',  [RefundController::class, 'reject'])->name('refunds.reject');
+    Route::post('/refunds/send',             [RefundController::class, 'adminSend'])->name('refunds.send');
+});
+
+// -------------------------------
+// CHAT ROUTES (admin, owner, customer)
+// -------------------------------
+use App\Http\Controllers\Chat\ChatController;
+
+Route::get('/unread-count', [ChatController::class, 'unreadCount'])->name('unread');
+Route::middleware('auth')->prefix('chat')->name('chat.')->group(function () {
+    Route::get('/', [ChatController::class, 'inbox'])->name('inbox');
+    Route::get('/{user}', [ChatController::class, 'show'])->name('show');
+    Route::post('/{user}/send', [ChatController::class, 'send'])->name('send');
+    Route::get('/{user}/poll', [ChatController::class, 'poll'])->name('poll');
+});
+
+// Admin
+Route::middleware('auth:admin')->get('/admin/unread-count', [ChatController::class, 'unreadCount']);
+
+// Owner
+Route::middleware('auth:owner')->get('/owner/unread-count', [ChatController::class, 'unreadCount']);
+
+// Customer
+Route::middleware('auth')->get('/customer/unread-count', [ChatController::class, 'unreadCount']);
 // -------------------------------
 // AUTH ROUTES
 // -------------------------------

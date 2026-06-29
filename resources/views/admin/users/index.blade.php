@@ -1,90 +1,228 @@
 @extends('admin.layouts.app')
 
 @section('content')
+<style>
+    .page-header { margin-bottom: 22px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .page-header h2 { font-size: 20px; font-weight: 800; color: var(--ink); }
+    .page-header p  { font-size: 13px; color: var(--slate); margin-top: 4px; }
 
-<div class="container mt-4">
-    <h1 class="mb-4">All Users</h1>
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 12px; padding: 16px 18px; display: flex; align-items: center; gap: 12px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); transition: all 0.18s; }
+    .stat-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.1); }
+    .stat-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; }
+    .icon-blue   { background: var(--sky); }
+    .icon-green  { background: rgba(16,185,129,0.1); }
+    .icon-yellow { background: rgba(245,158,11,0.1); }
+    .icon-red    { background: rgba(239,68,68,0.08); }
+    .stat-value { font-size: 22px; font-weight: 800; color: var(--ink); line-height: 1; }
+    .stat-label { font-size: 11.5px; color: var(--slate); font-weight: 600; margin-top: 3px; }
 
-    @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
-    @endif
+    /* Search bar */
+    .search-bar { margin-bottom: 18px; display: flex; gap: 10px; align-items: center; }
+    .search-input { flex: 1; max-width: 320px; padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13px; font-family: 'Plus Jakarta Sans', sans-serif; color: var(--ink); outline: none; transition: border-color 0.18s; background: var(--white); }
+    .search-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
-    <table class="table table-bordered table-striped">
-        <thead class="table-dark">
+    /* Table */
+    .table-card { background: var(--white); border: 1.5px solid var(--border); border-radius: 14px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    .table-card table { width: 100%; border-collapse: collapse; }
+    .table-card thead tr { background: var(--sky); }
+    .table-card thead th { padding: 13px 16px; font-size: 11px; font-weight: 700; color: var(--blue); text-transform: uppercase; letter-spacing: 0.8px; text-align: left; border-bottom: 1.5px solid var(--sky2); white-space: nowrap; }
+    .table-card tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    .table-card tbody tr:hover { background: var(--sky); }
+    .table-card tbody tr:last-child { border-bottom: none; }
+    .table-card tbody td { padding: 13px 16px; font-size: 13px; color: var(--ink); vertical-align: middle; }
+
+    /* User info cell */
+    .user-cell { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--blue); display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: #fff; flex-shrink: 0; }
+    .user-name  { font-size: 13.5px; font-weight: 700; color: var(--ink); }
+    .user-email { font-size: 11.5px; color: var(--slate); margin-top: 1px; }
+
+    /* Badges */
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 700; white-space: nowrap; }
+    .badge-admin    { background: rgba(109,40,217,0.1); color: #6d28d9; border: 1px solid rgba(109,40,217,0.25); }
+    .badge-owner    { background: var(--sky);            color: var(--blue); border: 1px solid var(--sky2); }
+    .badge-customer { background: rgba(16,185,129,0.1);  color: #065f46; border: 1px solid rgba(16,185,129,0.25); }
+    .badge-verified { background: rgba(16,185,129,0.1);  color: #065f46; border: 1px solid rgba(16,185,129,0.25); }
+    .badge-unverified { background: rgba(245,158,11,0.1); color: #92400e; border: 1px solid rgba(245,158,11,0.25); }
+    .badge-active   { background: rgba(16,185,129,0.1);  color: #065f46; border: 1px solid rgba(16,185,129,0.25); }
+    .badge-blocked  { background: rgba(239,68,68,0.08);  color: #991b1b; border: 1px solid rgba(239,68,68,0.2); }
+
+    /* Action buttons */
+    .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .btn-review { background: var(--sky); color: var(--blue); border: 1px solid var(--sky2); padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 700; text-decoration: none; transition: all 0.15s; white-space: nowrap; }
+    .btn-review:hover { background: var(--sky2); color: var(--blue2); }
+    .btn-verify { background: rgba(16,185,129,0.1); color: #065f46; border: 1px solid rgba(16,185,129,0.3); padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+    .btn-verify:hover { background: var(--emerald); color: #fff; border-color: var(--emerald); }
+    .btn-block  { background: rgba(239,68,68,0.08); color: #991b1b; border: 1px solid rgba(239,68,68,0.2); padding: 5px 12px; border-radius: 7px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.15s; font-family: inherit; white-space: nowrap; }
+    .btn-block:hover  { background: #ef4444; color: #fff; border-color: #ef4444; }
+
+    /* Pagination */
+    .pagination-wrap { padding: 16px 18px; border-top: 1px solid var(--border); }
+
+    .empty-state { text-align: center; padding: 50px 20px; color: var(--slate); }
+    .empty-state .empty-icon { font-size: 44px; margin-bottom: 12px; }
+</style>
+
+<div class="page-header">
+    <div>
+        <h2>👥 All Users</h2>
+        <p>Manage all registered users on the platform.</p>
+    </div>
+</div>
+
+{{-- Stats --}}
+@php
+    $totalUsers    = $users->total();
+    $admins        = \App\Models\User::where('role','admin')->count();
+    $owners        = \App\Models\User::where('role','owner')->count();
+    $customers     = \App\Models\User::where('role','customer')->count();
+    $blocked       = \App\Models\User::where('is_blocked', true)->count();
+    $unverified    = \App\Models\User::where('is_verified', false)->where('role','owner')->count();
+@endphp
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon icon-blue">👥</div>
+        <div><div class="stat-value">{{ $totalUsers }}</div><div class="stat-label">Total Users</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(109,40,217,0.08);">🛡️</div>
+        <div><div class="stat-value">{{ $admins }}</div><div class="stat-label">Admins</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-blue">🏭</div>
+        <div><div class="stat-value">{{ $owners }}</div><div class="stat-label">Owners</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-green">📦</div>
+        <div><div class="stat-value">{{ $customers }}</div><div class="stat-label">Customers</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-yellow">⏳</div>
+        <div><div class="stat-value">{{ $unverified }}</div><div class="stat-label">Unverified</div></div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon icon-red">🚫</div>
+        <div><div class="stat-value">{{ $blocked }}</div><div class="stat-label">Blocked</div></div>
+    </div>
+</div>
+
+{{-- Search --}}
+<div class="search-bar">
+    <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search by name or email...">
+</div>
+
+{{-- Table --}}
+<div class="table-card">
+    <table id="usersTable">
+        <thead>
             <tr>
-                <th>ID</th>
-                <th>Name</th>
-                <th>Email</th>
+                <th>Id</th>
+                <th>User</th>
                 <th>Role</th>
                 <th>Verified</th>
-                <th>Blocked</th>
+                <th>Status</th>
+                <th>Joined</th>
                 <th>Actions</th>
             </tr>
         </thead>
-
         <tbody>
-            @foreach ($users as $user)
-                <tr>
-                    <td>{{ $user->id }}</td>
-                    <td>{{ $user->name }}</td>
-                    <td>{{ $user->email }}</td>
-                    <td>{{ $user->role }}</td>
+            @forelse($users as $user)
+            <tr class="user-row">
+                <td style="font-family:monospace;font-weight:700;color:var(--blue);">#{{ $user->id }}</td>
 
-                    <td>
-                        @if($user->is_verified)
-                            <span class="badge bg-success">Yes</span>
-                        @else
-                            <span class="badge bg-warning">No</span>
-                        @endif
-                    </td>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar">{{ strtoupper(substr($user->name,0,1)) }}</div>
+                        <div>
+                            <div class="user-name">{{ $user->name }}</div>
+                            <div class="user-email">{{ $user->email }}</div>
+                        </div>
+                    </div>
+                </td>
 
-                    <td>
-                        @if($user->is_blocked)
-                            <span class="badge bg-danger">Blocked</span>
-                        @else
-                            <span class="badge bg-success">Active</span>
-                        @endif
-                    </td>
+                <td>
+                    @if($user->role === 'admin')
+                        <span class="badge badge-admin">🛡️ Admin</span>
+                    @elseif($user->role === 'owner')
+                        <span class="badge badge-owner">🏭 Owner</span>
+                    @else
+                        <span class="badge badge-customer">📦 Customer</span>
+                    @endif
+                </td>
 
-                    <td>
+                <td>
+                    @if($user->is_verified)
+                        <span class="badge badge-verified">✓ Verified</span>
+                    @else
+                        <span class="badge badge-unverified">⏳ Unverified</span>
+                    @endif
+                </td>
 
-                        <!-- ⭐ Review Documents Button -->
-                        <a href="{{ route('admin.users.verifyView', $user->id) }}"
-                           class="btn btn-sm btn-info mb-1">
-                            Review Documents
-                        </a>
+                <td>
+                    @if($user->is_blocked)
+                        <span class="badge badge-blocked">🚫 Blocked</span>
+                    @else
+                        <span class="badge badge-active">● Active</span>
+                    @endif
+                </td>
 
-                        <!-- ⭐ Final Verify Button -->
+                <td style="color:var(--slate);font-size:12px;">
+                    {{ $user->created_at->format('d M Y') }}
+                </td>
+
+                <td>
+                    <div class="action-btns">
+                        <a href="{{ route('admin.users.verifyView', $user->id) }}" class="btn-review">📄 Documents</a>
+
                         @if(!$user->is_verified)
-                            <form action="{{ route('admin.users.verifyFinal', $user->id) }}"
-                                  method="POST"
-                                  class="d-inline">
+                            <form action="{{ route('admin.users.verifyFinal', $user->id) }}" method="POST" style="display:inline;">
                                 @csrf
-                                <button class="btn btn-sm btn-success mb-1">Verify</button>
+                                <button class="btn-verify">✓ Verify</button>
                             </form>
                         @endif
 
-                        <!-- Block Button -->
                         @if(!$user->is_blocked)
-                            <form action="{{ route('admin.users.block', $user->id) }}"
-                                  method="POST"
-                                  class="d-inline">
+                            <form action="{{ route('admin.users.block', $user->id) }}" method="POST" style="display:inline;"
+                                  onsubmit="return confirm('Block {{ $user->name }}?')">
                                 @csrf
-                                <button class="btn btn-sm btn-danger mb-1">Block</button>
+                                <button class="btn-block">🚫 Block</button>
                             </form>
                         @endif
-
-                    </td>
-
-                </tr>
-            @endforeach
+                    </div>
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="7">
+                    <div class="empty-state">
+                        <div class="empty-icon">👥</div>
+                        <p>No users found.</p>
+                    </div>
+                </td>
+            </tr>
+            @endforelse
         </tbody>
     </table>
 
-    <div class="mt-3">
-        {{ $users->links() }}
-    </div>
-
+    @if($users->hasPages())
+        <div class="pagination-wrap">
+            {{ $users->links() }}
+        </div>
+    @endif
 </div>
+
+<script>
+    // Live search filter
+    document.getElementById('searchInput').addEventListener('input', function () {
+        const q = this.value.toLowerCase();
+        document.querySelectorAll('.user-row').forEach(row => {
+            const text = row.textContent.toLowerCase();
+            row.style.display = text.includes(q) ? '' : 'none';
+        });
+    });
+</script>
 
 @endsection
